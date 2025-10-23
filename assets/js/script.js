@@ -209,16 +209,16 @@ function initializeMap() {
             const alumniIcon = L.divIcon({
                 className: 'custom-alumni-marker',
                 html: `<div style="
-                    width: 20px;
-                    height: 20px;
+                    width: 12px;
+                    height: 12px;
                     border-radius: 50%;
                     background-color: #5b1f1f;
-                    border: 2px solid #ecc35c;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    border: 1px solid #ecc35c;
+                    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
                     cursor: pointer;
                 "></div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
+                iconSize: [12, 12],
+                iconAnchor: [6, 6]
             });
 
             // Create popup content

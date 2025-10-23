@@ -1,3 +1,52 @@
+<?php
+// News Corner - Displaying dynamic content from database
+require_once '../includes/db_config.php';
+
+// Initialize variables
+$news = [];
+$error = '';
+
+// Get all active news articles
+try {
+    // Check if tables exist before querying
+    $tablesExist = true;
+    try {
+        $pdo->query("SELECT 1 FROM news LIMIT 1");
+        $pdo->query("SELECT 1 FROM users LIMIT 1");
+    } catch(PDOException $e) {
+        $tablesExist = false;
+    }
+
+    if ($tablesExist) {
+        try {
+            // Try to get author name, fallback to author_id if full_name doesn't exist
+            $stmt = $pdo->query("
+                SELECT n.*,
+                       COALESCE(u.full_name, u.name, CONCAT('User #', n.author_id)) as author_name
+                FROM news n
+                LEFT JOIN users u ON n.author_id = u.id
+                WHERE n.is_active = 1
+                ORDER BY n.is_featured DESC, n.publish_date DESC
+            ");
+            $news = $stmt->fetchAll();
+        } catch(PDOException $e) {
+            // If the join fails, try without the author name
+            $stmt = $pdo->query("
+                SELECT n.*, CONCAT('User #', n.author_id) as author_name
+                FROM news n
+                WHERE n.is_active = 1
+                ORDER BY n.is_featured DESC, n.publish_date DESC
+            ");
+            $news = $stmt->fetchAll();
+        }
+    } else {
+        $error = "Database tables not found. Please run the database setup first.";
+    }
+} catch(PDOException $e) {
+    $error = "Error loading news: " . $e->getMessage();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,6 +76,32 @@
             color: var(--text-light);
             font-size: 1.1rem;
             margin-bottom: 40px;
+        }
+
+        .manage-news {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .manage-news-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .manage-news-btn:hover {
+            background: #4a1a1a;
+            transform: translateY(-2px);
         }
 
         /* Bulletin Board Background */
@@ -187,13 +262,32 @@
             background: rgba(91, 31, 31, 0.1);
         }
 
-        .read-more:hover {
+        .featured-badge {
+            position: absolute;
+            top: -10px;
+            right: 20px;
             background: var(--primary-color);
             color: white;
-            transform: translateX(2px);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        /* Animations */
+        /* No News Message */
+        .no-news {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .no-news-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: block;
+        }
         @keyframes bulletinFloat {
             0%, 100% { transform: translateY(0px) rotate(var(--rotation, 0deg)); }
             25% { transform: translateY(-3px) rotate(calc(var(--rotation, 0deg) + 0.5deg)); }
@@ -230,6 +324,11 @@
             .news-excerpt {
                 font-size: 13px;
             }
+
+            .manage-news {
+                text-align: center;
+                margin-bottom: 20px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -255,137 +354,118 @@
             <h2 class="news-title">News Corner</h2>
             <p class="news-subtitle">Stay informed with the latest news and updates from our alumni community</p>
 
+            <?php if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                <div class="manage-news">
+                    <a href="/alumni/admin/manage_news.php" class="manage-news-btn">
+                        <i class="fas fa-cog"></i> Manage News
+                    </a>
+                </div>
+            <?php endif; ?>
+
+            <?php if (isset($error) && !empty($error)): ?>
+                <div style="background: #fee2e2; color: #991b1b; padding: 20px; border-radius: 8px; border: 1px solid #fca5a5; text-align: center; margin-bottom: 20px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                    <strong>News Corner Error:</strong> <?php echo htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
+
             <div class="bulletin-board">
                 <div class="news-bulletin">
-                    <div class="bulletin-card">
-                        <div class="pin"></div>
-                        <div class="card-header">
-                            <span class="news-category">Achievement</span>
-                            <span class="news-date">Dec 10, 2025</span>
+                    <?php if (isset($news) && !empty($news)): ?>
+                        <?php foreach ($news as $article): ?>
+                            <div class="bulletin-card <?php echo $article['is_featured'] ? 'featured' : ''; ?>">
+                                <?php if ($article['is_featured']): ?>
+                                    <div class="featured-badge">Featured</div>
+                                <?php endif; ?>
+                                <div class="pin"></div>
+                                <div class="card-header">
+                                    <span class="news-category">
+                                        <i class="fas fa-tag"></i> News
+                                    </span>
+                                    <span class="news-date">
+                                        <?php echo date('M j, Y', strtotime($article['publish_date'])); ?>
+                                    </span>
+                                </div>
+                                <h3 class="news-title"><?php echo htmlspecialchars($article['title']); ?></h3>
+                                <?php if ($article['excerpt']): ?>
+                                    <p class="news-excerpt">
+                                        <?php echo htmlspecialchars($article['excerpt']); ?>
+                                    </p>
+                                <?php else: ?>
+                                    <p class="news-excerpt">
+                                        <?php echo htmlspecialchars(substr(strip_tags($article['content']), 0, 120)); ?>...
+                                    </p>
+                                <?php endif; ?>
+                                <div class="news-author">
+                                    <i class="fas fa-user"></i> by <?php echo htmlspecialchars($article['author_name']); ?>
+                                </div>
+                                <a href="#" class="read-more" onclick="viewNews(<?php echo $article['id']; ?>)">
+                                    Read More <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="no-news">
+                            <i class="fas fa-newspaper no-news-icon"></i>
+                            <h3>No news articles available</h3>
+                            <p>Check back later for the latest updates and alumni news.</p>
                         </div>
-                        <h3 class="news-title">Alumni Wins Prestigious Innovation Award</h3>
-                        <p class="news-excerpt">
-                            Sarah Mitchell (Class of 2019) has been awarded the Global Innovation Award for her
-                            groundbreaking work in sustainable technology solutions.
-                        </p>
-                        <a href="#" class="read-more">Read More →</a>
-                    </div>
-
-                    <div class="bulletin-card">
-                        <div class="pin"></div>
-                        <div class="card-header">
-                            <span class="news-category">Business</span>
-                            <span class="news-date">Dec 8, 2025</span>
-                        </div>
-                        <h3 class="news-title">Alumni Startup Raises $10M in Series A Funding</h3>
-                        <p class="news-excerpt">
-                            TechVentures, founded by alumni John Anderson, successfully closes Series A funding round
-                            led by prominent venture capital firms.
-                        </p>
-                        <a href="#" class="read-more">Read More →</a>
-                    </div>
-
-                    <div class="bulletin-card">
-                        <div class="pin"></div>
-                        <div class="card-header">
-                            <span class="news-category">Social Impact</span>
-                            <span class="news-date">Dec 5, 2025</span>
-                        </div>
-                        <h3 class="news-title">Alumni-Led Initiative Impacts 10,000 Lives</h3>
-                        <p class="news-excerpt">
-                            The education initiative led by Lisa Patel (Class of 2021) has successfully provided
-                            quality education to over 10,000 underprivileged children.
-                        </p>
-                        <a href="#" class="read-more">Read More →</a>
-                    </div>
-
-                    <div class="bulletin-card">
-                        <div class="pin"></div>
-                        <div class="card-header">
-                            <span class="news-category">University</span>
-                            <span class="news-date">Dec 3, 2025</span>
-                        </div>
-                        <h3 class="news-title">New Library Wing Construction Begins</h3>
-                        <p class="news-excerpt">
-                            Thanks to generous alumni contributions, construction of the new state-of-the-art library
-                            wing has officially commenced on campus.
-                        </p>
-                        <a href="#" class="read-more">Read More →</a>
-                    </div>
-
-                    <div class="bulletin-card">
-                        <div class="pin"></div>
-                        <div class="card-header">
-                            <span class="news-category">Research</span>
-                            <span class="news-date">Nov 30, 2025</span>
-                        </div>
-                        <h3 class="news-title">Alumni Researcher Published in Nature Journal</h3>
-                        <p class="news-excerpt">
-                            Dr. Michael Chen's groundbreaking research on AI applications in healthcare has been
-                            published in the prestigious Nature journal.
-                        </p>
-                        <a href="#" class="read-more">Read More →</a>
-                    </div>
-
-                    <div class="bulletin-card">
-                        <div class="pin"></div>
-                        <div class="card-header">
-                            <span class="news-category">Event</span>
-                            <span class="news-date">Nov 28, 2025</span>
-                        </div>
-                        <h3 class="news-title">Record Attendance at Tech Leaders Summit</h3>
-                        <p class="news-excerpt">
-                            Over 500 alumni attended the Tech Leaders Summit, making it the largest alumni networking
-                            event in the technology sector to date.
-                        </p>
-                        <a href="#" class="read-more">Read More →</a>
-                    </div>
-
-                    <div class="bulletin-card">
-                        <div class="pin"></div>
-                        <div class="card-header">
-                            <span class="news-category">Achievement</span>
-                            <span class="news-date">Nov 25, 2025</span>
-                        </div>
-                        <h3 class="news-title">Alumni Appointed as Fortune 500 CEO</h3>
-                        <p class="news-excerpt">
-                            Emily Rodriguez (Class of 2020) has been appointed as the youngest CEO of a Fortune 500
-                            company, breaking multiple glass ceilings.
-                        </p>
-                        <a href="#" class="read-more">Read More →</a>
-                    </div>
-
-                    <div class="bulletin-card">
-                        <div class="pin"></div>
-                        <div class="card-header">
-                            <span class="news-category">Program</span>
-                            <span class="news-date">Nov 22, 2025</span>
-                        </div>
-                        <h3 class="news-title">Mentorship Program Sees 95% Success Rate</h3>
-                        <p class="news-excerpt">
-                            The alumni mentorship program reports exceptional success with 95% of mentees achieving
-                            their career goals within the first year.
-                        </p>
-                        <a href="#" class="read-more">Read More →</a>
-                    </div>
-
-                    <div class="bulletin-card">
-                        <div class="pin"></div>
-                        <div class="card-header">
-                            <span class="news-category">Sports</span>
-                            <span class="news-date">Nov 20, 2025</span>
-                        </div>
-                        <h3 class="news-title">Alumni Represents Country at Olympics</h3>
-                        <p class="news-excerpt">
-                            David Thompson (Class of 2016) will represent the country in athletics at the upcoming
-                            Summer Olympics, making the entire alumni community proud.
-                        </p>
-                        <a href="#" class="read-more">Read More →</a>
-                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- News Detail Modal -->
+    <div class="modal" id="newsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; border-radius: 8px; padding: 30px; max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color);">
+                <h3 class="modal-title" id="modalTitle">News Article</h3>
+                <button class="close-btn" onclick="closeNewsModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">&times;</button>
+            </div>
+            <div id="newsDetailContent">
+                <!-- News details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function viewNews(newsId) {
+            // Find the news data
+            <?php
+            $news_json = json_encode($news);
+            echo "const news = $news_json;";
+            ?>
+
+            const article = news.find(n => n.id == newsId);
+
+            if (article) {
+                const modal = document.getElementById('newsModal');
+                const title = document.getElementById('modalTitle');
+                const content = document.getElementById('newsDetailContent');
+
+                title.textContent = article.title;
+                content.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; gap: 15px; margin-bottom: 15px; font-size: 12px; color: #6b7280;">
+                            <span><i class="fas fa-user"></i> ${article.author_name}</span>
+                            <span><i class="fas fa-calendar"></i> ${new Date(article.publish_date).toLocaleDateString()}</span>
+                            <span><i class="fas fa-clock"></i> ${new Date(article.publish_date).toLocaleTimeString()}</span>
+                        </div>
+                        <div style="font-size: 16px; line-height: 1.6; color: #333; white-space: pre-wrap;">${article.content}</div>
+                    </div>
+                `;
+
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeNewsModal() {
+            document.getElementById('newsModal').style.display = 'none';
+        }
+
+        });
+    </script>
 
     <script src="../assets/js/script.js"></script>
 </body>

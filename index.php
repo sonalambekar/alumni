@@ -1,3 +1,30 @@
+<?php
+session_start();
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id']) || $_SESSION['user_id'] <= 0) {
+    // User is not logged in, redirect to login page
+    header("Location: /alumni/login.php");
+    exit();
+}
+
+// If user is logged in, check if they're a director and redirect to admin dashboard
+if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
+    require_once 'includes/db_config.php';
+    $stmt = $pdo->prepare("SELECT is_director FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $user = $stmt->fetch();
+
+    if ($user && $user['is_director'] == 1) {
+        // Set admin role if not already set
+        if (!isset($_SESSION['role'])) {
+            $_SESSION['role'] = 'admin';
+        }
+        header("Location: /alumni/admin/admin_dashboard.php");
+        exit();
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,20 +33,31 @@
     <title>Alumni Connect - Home</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <!-- Font Awesome for icons -->
-    <script src="https://kit.fontawesome.com/b99e675b6e.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Leaflet CSS (Free OpenStreetMap library) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin=""/>
 </head>
 <body>
+    <?php
+    // Note: User authentication is handled by the login requirement at the top
+    ?>
+
+    <!-- Fixed Logout Button -->
+    <div class="fixed-logout" style="position: fixed; top: 20px; right: 80px; z-index: 1000; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <a href="/alumni/logout.php" style="background: #5b1f1f; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background 0.3s ease;" onmouseover="this.style.background='#4a1919'" onmouseout="this.style.background='#5b1f1f'">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </div>
+
     <?php include 'sidebar.php'; ?>
 
     <div class="main-content" id="mainContent">
         <!-- Hero Section -->
         <section class="hero-section">
             <div class="hero-image">
-                <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&h=600&fit=crop" alt="Alumni Event">
+                <img src="assets/images/Generated Image October 17, 2025 - 11_10AM.png" alt="Alumni Event">
             </div>
             <div class="hero-content">
                 <h1>About Our <span>Alumni Network</span></h1>
@@ -299,5 +337,23 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
     <script src="assets/js/script.js?v=2"></script>
+
+    <style>
+        /* Mobile responsive styles for fixed logout button */
+        @media (max-width: 768px) {
+            .fixed-logout {
+                top: 80px !important; /* Below sidebar toggle */
+                right: 15px !important;
+                left: 15px !important;
+                display: flex !important;
+                justify-content: flex-end !important;
+            }
+
+            .fixed-logout a {
+                padding: 8px 14px !important;
+                font-size: 13px !important;
+            }
+        }
+    </style>
 </body>
 </html>
