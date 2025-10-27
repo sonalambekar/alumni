@@ -214,71 +214,175 @@
             font-size: 13px;
         }
 
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #7a2a2a 100%);
+            color: var(--white);
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 42px;
+            margin-bottom: 15px;
+        }
+
+        .page-header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .modal-header h2 {
+            color: var(--primary-color);
+            font-size: 28px;
+            margin: 0;
+        }
+
+        .close {
+            font-size: 30px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(91, 31, 31, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
         @media (max-width: 768px) {
-            .job-card {
-                grid-template-columns: 1fr;
-                text-align: center;
+            .modal-content {
+                padding: 30px 20px;
+                width: 95%;
             }
 
-            .company-logo {
-                margin: 0 auto;
+            .form-actions {
+                flex-direction: column;
             }
 
-            .job-meta {
-                justify-content: center;
-            }
-
-            .job-actions {
-                align-items: center;
+            .form-actions button {
+                width: 100%;
             }
 
             .page-header h1 {
                 font-size: 32px;
             }
-
-            .search-container {
-                margin: 10px;
-                padding: 15px;
-            }
-
-            .search-input-container {
-                flex-direction: column;
-                gap: 10px;
-                padding: 10px;
-            }
-
-            .search-icon {
-                margin: 0;
-                align-self: flex-start;
-            }
-
-            .search-input {
-                width: 100%;
-                padding: 10px;
-            }
-
-            .search-btn {
-                width: 100%;
-                margin: 0;
-                padding: 15px;
-            }
-
-            .search-filters {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .filter-select {
-                width: 100%;
-                min-width: auto;
-            }
         }
     </style>
 </head>
-<body>
-    <?php include '../sidebar.php'; ?>
+    <?php
+    // Check if specific job type filter is requested
+    $jobTypeFilter = '';
+    if (isset($_GET['type']) && $_GET['type'] === 'internship') {
+        $jobTypeFilter = 'internship';
+    }
+
+    // Check if post job mode is requested
+    $showPostJob = isset($_GET['post']) && $_GET['post'] === 'true';
+    ?>
 
     <div class="main-content" id="mainContent">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>
+                <?php
+                if ($jobTypeFilter === 'internship') {
+                    echo 'Internship Opportunities';
+                } elseif ($showPostJob) {
+                    echo 'Post Job Vacancies';
+                } else {
+                    echo 'Job Board';
+                }
+                ?>
+            </h1>
+            <p>
+                <?php
+                if ($jobTypeFilter === 'internship') {
+                    echo 'Discover exciting internship opportunities shared by alumni and partner companies';
+                } elseif ($showPostJob) {
+                    echo 'Share job openings from your company and help fellow alumni advance their careers';
+                } else {
+                    echo 'Find your next career opportunity in our exclusive alumni job board';
+                }
+                ?>
+            </p>
+        </div>
+
         <!-- Floating Search Bar -->
         <div class="search-container">
             <div class="search-wrapper">
@@ -310,7 +414,91 @@
             </div>
         </div>
 
-        <div class="jobs-content">
+        <!-- Post Job Button -->
+        <?php if ($showPostJob): ?>
+        <div style="text-align: right; margin: 20px auto; max-width: 1000px;">
+            <button class="btn" onclick="togglePostJobModal()" style="background: var(--secondary-color);">
+                <i class="fas fa-plus"></i> Post Job
+            </button>
+        </div>
+        <?php endif; ?>
+
+        <!-- Post Job Modal -->
+        <div id="postJobModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Post a Job</h2>
+                    <span class="close" onclick="closePostJobModal()">&times;</span>
+                </div>
+                <form id="postJobForm">
+                    <div class="form-group">
+                        <label for="jobTitle">Job Title</label>
+                        <input type="text" id="jobTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="companyName">Company Name</label>
+                        <input type="text" id="companyName" name="company" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="jobDescription">Job Description</label>
+                        <textarea id="jobDescription" name="description" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="jobRequirements">Requirements</label>
+                        <textarea id="jobRequirements" name="requirements" rows="3"></textarea>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label for="jobLocation">Location</label>
+                            <input type="text" id="jobLocation" name="location" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="jobType">Job Type</label>
+                            <select id="jobType" name="job_type" required>
+                                <option value="full-time">Full-time</option>
+                                <option value="part-time">Part-time</option>
+                                <option value="contract">Contract</option>
+                                <option value="internship">Internship</option>
+                                <option value="freelance">Freelance</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label for="experienceLevel">Experience Level</label>
+                            <select id="experienceLevel" name="experience_level">
+                                <option value="entry">Entry Level</option>
+                                <option value="mid">Mid Level</option>
+                                <option value="senior">Senior Level</option>
+                                <option value="executive">Executive</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="salaryRange">Salary Range</label>
+                            <input type="text" id="salaryRange" name="salary_range" placeholder="e.g., ₹10-15 LPA">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label for="applicationDeadline">Application Deadline</label>
+                            <input type="date" id="applicationDeadline" name="application_deadline">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail">Contact Email</label>
+                            <input type="email" id="contactEmail" name="contact_email" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="applicationUrl">Application URL (optional)</label>
+                        <input type="url" id="applicationUrl" name="application_url" placeholder="https://company.com/careers/job">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closePostJobModal()">Cancel</button>
+                        <button type="submit" class="btn">Post Job</button>
+                    </div>
+                </form>
+            </div>
+        </div>
             <div class="jobs-list">
                 <div class="job-card">
                     <div class="company-logo">TI</div>
@@ -448,6 +636,50 @@
     </div>
 
     <script>
+        // Modal functions
+        function togglePostJobModal() {
+            const modal = document.getElementById('postJobModal');
+            modal.classList.toggle('show');
+        }
+
+        function closePostJobModal() {
+            document.getElementById('postJobModal').classList.remove('show');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('postJobModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePostJobModal();
+            }
+        });
+
+        // Handle post job form submission
+        document.getElementById('postJobForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            fetch('/alumni/submit_job.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Job posted successfully!');
+                    closePostJobModal();
+                    this.reset();
+                    // Optionally reload the page or add the job to the list
+                } else {
+                    alert('Error posting job. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error posting job. Please try again.');
+            });
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
             const jobSearch = document.getElementById('jobSearch');
             const locationFilter = document.getElementById('locationFilter');
@@ -455,11 +687,18 @@
             const searchBtn = document.querySelector('.search-btn');
             const jobCards = document.querySelectorAll('.job-card');
 
+            // Set initial filter based on URL parameter
+            <?php if ($jobTypeFilter === 'internship'): ?>
+                if (typeFilter) {
+                    typeFilter.value = 'internship';
+                }
+            <?php endif; ?>
+
             // Job search functionality
             function searchJobs() {
-                const searchTerm = jobSearch.value.toLowerCase();
-                const locationValue = locationFilter.value.toLowerCase();
-                const typeValue = typeFilter.value.toLowerCase();
+                const searchTerm = jobSearch ? jobSearch.value.toLowerCase() : '';
+                const locationValue = locationFilter ? locationFilter.value.toLowerCase() : '';
+                const typeValue = typeFilter ? typeFilter.value.toLowerCase() : '';
 
                 jobCards.forEach(card => {
                     const jobTitle = card.querySelector('h3').textContent.toLowerCase();

@@ -374,6 +374,24 @@
             <li class="nav-item has-dropdown">
                 <a href="#" class="nav-link dropdown-toggle">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    <span class="nav-text">Enterprise</span>
+                    <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a href="/alumni/pages/business-connect.php">Business Connect</a></li>
+                    <li><a href="/alumni/pages/couch-surfing.php">Couch Surfing</a></li>
+                    <li><a href="/alumni/pages/member-support.php">Member Support</a></li>
+                    <li><a href="/alumni/pages/couch_surfing_enterprises.php">Enterprises Couch Surfing</a></li>
+                </ul>
+            </li>
+
+            <li class="nav-item has-dropdown">
+                <a href="#" class="nav-link dropdown-toggle">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="8" x2="12" y2="12"></line>
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>

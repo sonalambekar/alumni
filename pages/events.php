@@ -18,6 +18,27 @@ $events = [
     ],
     '2026-02-01' => [
         ['title' => 'Annual Gala Dinner', 'time' => '19:00 - 23:00', 'location' => 'Grand Hotel, Mumbai', 'description' => 'An elegant evening celebrating alumni achievements. Featuring awards ceremony, live entertainment, and gourmet dining.'],
+    ],
+    '2026-01-26' => [
+        ['title' => 'Republic Day Celebration', 'time' => '08:00 - 12:00', 'location' => 'University Grounds', 'description' => 'Join the university community in celebrating India\'s Republic Day with flag hoisting, cultural performances, and patriotic speeches.'],
+    ],
+    '2026-03-15' => [
+        ['title' => 'Holi Cultural Fest', 'time' => '10:00 - 16:00', 'location' => 'College Campus', 'description' => 'Celebrate the festival of colors with traditional Holi games, music, dance, and authentic Indian cuisine. Open to all students and alumni.'],
+    ],
+    '2026-04-14' => [
+        ['title' => 'Ambedkar Jayanti', 'time' => '09:00 - 11:00', 'location' => 'Auditorium', 'description' => 'Commemorate the birth anniversary of Dr. B.R. Ambedkar with lectures, discussions, and cultural programs highlighting social justice.'],
+    ],
+    '2026-08-15' => [
+        ['title' => 'Independence Day Festivities', 'time' => '07:00 - 13:00', 'location' => 'University Stadium', 'description' => 'National celebration with flag ceremony, parade, cultural dances, and speeches honoring India\'s independence.'],
+    ],
+    '2026-10-02' => [
+        ['title' => 'Gandhi Jayanti', 'time' => '08:00 - 10:00', 'location' => 'Campus Garden', 'description' => 'Observe Mahatma Gandhi\'s birthday with prayer meetings, cleanliness drives, and discussions on non-violence and peace.'],
+    ],
+    '2026-11-14' => [
+        ['title' => 'Children\'s Day Celebration', 'time' => '14:00 - 18:00', 'location' => 'Community Hall', 'description' => 'Fun activities, games, and cultural programs for children in the university community, celebrating childhood and education.'],
+    ],
+    '2026-12-25' => [
+        ['title' => 'Christmas Cultural Evening', 'time' => '18:00 - 22:00', 'location' => 'University Chapel', 'description' => 'Festive evening with carol singing, nativity plays, and holiday treats to celebrate Christmas with the alumni family.'],
     ]
 ];
 ?>
@@ -202,6 +223,27 @@ $events = [
             position: relative;
             animation: modalFadeIn 0.3s ease;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: var(--secondary-color);
+            color: var(--primary-color);
         }
 
         @keyframes modalFadeIn {
@@ -311,12 +353,9 @@ $events = [
 
             <div class="event-details" id="eventDetails">
                 <div class="event-details-content">
-                    <h3 id="eventTitle"></h3>
-                    <p id="eventTime"></p>
-                    <p id="eventLocation"></p>
-                    <p id="eventDescription"></p>
-                    <button class="close-btn" id="closeEvent">Close</button>
+                    <!-- Dynamic content will be inserted here -->
                 </div>
+                <button class="close-btn" id="closeEvent">Close</button>
             </div>
         </div>
     </div>
@@ -382,13 +421,13 @@ $events = [
                     eventDot.title = `${events[dateStr][0].title} - ${events[dateStr][0].time}`;
                     eventDot.onclick = (e) => {
                         e.stopPropagation();
-                        showEventDetails(events[dateStr][0]);
+                        showEventDetails(events[dateStr]);
                     };
                     dayElement.appendChild(eventDot);
 
                     // Make the whole day clickable
                     dayElement.style.cursor = 'pointer';
-                    dayElement.onclick = () => showEventDetails(events[dateStr][0]);
+                    dayElement.onclick = () => showEventDetails(events[dateStr]);
                 }
 
                 calendarDays.appendChild(dayElement);
@@ -418,11 +457,36 @@ $events = [
         }
 
         // Show event details
-        function showEventDetails(event) {
-            document.getElementById('eventTitle').textContent = event.title;
-            document.getElementById('eventTime').innerHTML = `⏰ <strong>Time:</strong> ${event.time}`;
-            document.getElementById('eventLocation').innerHTML = `📍 <strong>Location:</strong> ${event.location}`;
-            document.getElementById('eventDescription').innerHTML = `<strong>Description:</strong> ${event.description}`;
+        function showEventDetails(eventList) {
+            const eventDetailsContent = document.querySelector('.event-details-content');
+            eventDetailsContent.innerHTML = '';
+
+            if (Array.isArray(eventList) && eventList.length > 1) {
+                // Multiple events on the same day
+                eventList.forEach((event, index) => {
+                    const eventDiv = document.createElement('div');
+                    eventDiv.style.borderBottom = index < eventList.length - 1 ? '1px solid #eee' : 'none';
+                    eventDiv.style.paddingBottom = '15px';
+                    eventDiv.style.marginBottom = index < eventList.length - 1 ? '15px' : '0';
+                    eventDiv.innerHTML = `
+                        <h3>${event.title}</h3>
+                        <p><strong>Time:</strong> ${event.time}</p>
+                        <p><strong>Location:</strong> ${event.location}</p>
+                        <p><strong>Description:</strong> ${event.description}</p>
+                    `;
+                    eventDetailsContent.appendChild(eventDiv);
+                });
+            } else {
+                // Single event
+                const event = eventList[0] || eventList;
+                eventDetailsContent.innerHTML = `
+                    <h3>${event.title}</h3>
+                    <p><strong>Time:</strong> ${event.time}</p>
+                    <p><strong>Location:</strong> ${event.location}</p>
+                    <p><strong>Description:</strong> ${event.description}</p>
+                `;
+            }
+
             eventDetails.style.display = 'flex';
         }
 

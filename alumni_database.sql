@@ -195,8 +195,39 @@ INSERT IGNORE INTO jobs (title, company, description, location, job_type, experi
 ('Senior Software Engineer', 'Tech Innovations Inc', 'We are looking for an experienced software engineer to join our growing team. You will be working on cutting-edge projects and mentoring junior developers.', 'San Francisco', 'full-time', 'senior'),
 ('Marketing Coordinator', 'Global Marketing Solutions', 'Join our marketing team to help develop and execute marketing campaigns. Experience with digital marketing preferred.', 'Remote', 'full-time', 'mid');
 
--- Insert sample interest groups
-INSERT IGNORE INTO interest_groups (name, description, category) VALUES
-('Technology & Innovation', 'Connect with alumni working in technology, startups, and innovation. Share ideas, discuss trends, and collaborate on projects.', 'Technology'),
-('Entrepreneurship', 'A community for alumni entrepreneurs and those interested in starting their own ventures. Share experiences and learn from each other.', 'Business'),
-('Arts & Culture', 'Celebrate creativity and cultural expression. Connect with alumni in the arts, literature, music, and cultural preservation.', 'Arts');
+-- Couch listings table for alumni to offer accommodation
+CREATE TABLE IF NOT EXISTS couch_listings (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    available_from DATE NOT NULL,
+    available_to DATE NOT NULL,
+    max_guests INT DEFAULT 1,
+    amenities TEXT,
+    rules TEXT,
+    contact_info VARCHAR(255),
+    author_id INT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (author_id) REFERENCES users(id)
+);
+
+-- Couch requests table for alumni seeking accommodation
+CREATE TABLE IF NOT EXISTS couch_requests (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    location_needed VARCHAR(255) NOT NULL,
+    arrival_date DATE NOT NULL,
+    departure_date DATE NOT NULL,
+    num_guests INT DEFAULT 1,
+    preferences TEXT,
+    contact_info VARCHAR(255),
+    author_id INT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (author_id) REFERENCES users(id)
+);

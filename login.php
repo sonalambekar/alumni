@@ -454,7 +454,7 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
 <body>
     <div class="login-container">
         <div class="login-header">
-            <h1>Welcome Back</h1>
+            <h1>Welcome to Gems of GM</h1>
             <p>Sign in to access your Alumni Connect account</p>
         </div>
 

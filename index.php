@@ -269,8 +269,134 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
             </div>
         </section>
 
-        <!-- Footer -->
-        <footer class="footer">
+        <!-- Alumni Services Cards Section -->
+        <section class="services-section">
+            <div class="section-header">
+                <h2>Alumni Services</h2>
+                <p>Access exclusive services and opportunities designed for our alumni community</p>
+            </div>
+
+            <div class="services-grid">
+                <div class="service-card" onclick="location.href='pages/mentorship.php'">
+                    <div class="service-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Mentor</h3>
+                    <p>Connect with experienced alumni mentors to guide your career journey and professional development.</p>
+                    <div class="service-stats">
+                        <span>500+ Mentors</span>
+                        <span>1200+ Sessions</span>
+                    </div>
+                </div>
+
+                <div class="service-card" onclick="location.href='pages/jobs.php?type=internship'">
+                    <div class="service-icon">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <h3>Internships</h3>
+                    <p>Discover exclusive internship opportunities shared by alumni and partner companies.</p>
+                    <div class="service-stats">
+                        <span>200+ Opportunities</span>
+                        <span>50+ Companies</span>
+                    </div>
+                </div>
+
+                <div class="service-card" onclick="location.href='pages/jobs.php?post=true'">
+                    <div class="service-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <h3>Post Job Vacancies</h3>
+                    <p>Share job openings from your company and help fellow alumni advance their careers.</p>
+                    <div class="service-stats">
+                        <span>Post Jobs</span>
+                        <span>For Free</span>
+                    </div>
+                </div>
+
+                <div class="service-card" onclick="toggleExperienceModal()">
+                    <div class="service-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h3>Share Your Experience</h3>
+                    <p>Share your professional journey, insights, and advice with the alumni community.</p>
+                    <div class="service-stats">
+                        <span>300+ Stories</span>
+                        <span>Inspiring</span>
+                    </div>
+                </div>
+
+                <div class="service-card" onclick="location.href='pages/scholarship.php'">
+                    <div class="service-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3>Institution Scholarship</h3>
+                    <p>Support current students through scholarships and educational funding programs.</p>
+                    <div class="service-stats">
+                        <span>₹50L+ Donated</span>
+                        <span>100+ Students</span>
+                    </div>
+                </div>
+
+                <div class="service-card" onclick="location.href='pages/institute_medal.php'">
+                    <div class="service-icon">
+                        <i class="fas fa-medal"></i>
+                    </div>
+                    <h3>Institute Medal</h3>
+                    <p>Nominate deserving alumni for institutional recognition and awards program.</p>
+                    <div class="service-stats">
+                        <span>Annual Awards</span>
+                        <span>Recognition</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Experience Sharing Modal -->
+        <div id="experienceModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Share Your Experience</h2>
+                    <span class="close" onclick="closeExperienceModal()">&times;</span>
+                </div>
+                <form id="experienceForm">
+                    <div class="form-group">
+                        <label for="experienceTitle">Experience Title</label>
+                        <input type="text" id="experienceTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="experienceContent">Share your story, insights, or advice</label>
+                        <textarea id="experienceContent" name="content" rows="6" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="experienceCategory">Category</label>
+                        <select id="experienceCategory" name="category">
+                            <option value="career">Career Advice</option>
+                            <option value="entrepreneurship">Entrepreneurship</option>
+                            <option value="leadership">Leadership</option>
+                            <option value="personal">Personal Growth</option>
+                            <option value="industry">Industry Insights</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeExperienceModal()">Cancel</button>
+                        <button type="submit" class="btn">Share Experience</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Experience Stories Section -->
+        <section class="experience-section" id="experienceSection">
+            <div class="section-header">
+                <h2>Alumni Experiences</h2>
+                <p>Insights, stories, and wisdom shared by our community</p>
+            </div>
+
+            <div class="experience-grid" id="experienceGrid">
+                <!-- Experience cards will be loaded here -->
+            </div>
+        </section>
             <div class="footer-content">
                 <div class="footer-section">
                     <h3>About Alumni Connect</h3>
@@ -333,14 +459,393 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
         </footer>
     </div>
 
-    <script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-    <script src="assets/js/script.js?v=2"></script>
+    <script>
+        // Modal functions
+        function toggleExperienceModal() {
+            const modal = document.getElementById('experienceModal');
+            modal.classList.toggle('show');
+        }
 
-    <style>
-        /* Mobile responsive styles for fixed logout button */
+        function closeExperienceModal() {
+            document.getElementById('experienceModal').classList.remove('show');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('experienceModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeExperienceModal();
+            }
+        });
+
+        // Handle experience form submission
+        document.getElementById('experienceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            fetch('/alumni/submit_experience.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Experience shared successfully!');
+                    closeExperienceModal();
+                    loadExperiences();
+                    this.reset();
+                } else {
+                    alert('Error sharing experience. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error sharing experience. Please try again.');
+            });
+        });
+
+        // Load experiences on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExperiences();
+        });
+
+        // Function to load experiences
+        function loadExperiences() {
+            fetch('/alumni/get_experiences.php')
+            .then(response => response.json())
+            .then(data => {
+                const experienceGrid = document.getElementById('experienceGrid');
+                experienceGrid.innerHTML = '';
+
+                if (data.length === 0) {
+                    experienceGrid.innerHTML = '<p style="text-align: center; color: var(--text-light); font-style: italic;">No experiences shared yet. Be the first to share yours!</p>';
+                    return;
+                }
+
+                data.forEach(experience => {
+                    const experienceCard = createExperienceCard(experience);
+                    experienceGrid.appendChild(experienceCard);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading experiences:', error);
+            });
+        }
+
+        // Function to create experience card HTML
+        function createExperienceCard(experience) {
+            const card = document.createElement('div');
+            card.className = 'experience-card';
+
+            card.innerHTML = `
+                <div class="experience-header">
+                    <div class="experience-author">
+                        <div class="experience-avatar">${experience.author_name.charAt(0).toUpperCase()}</div>
+                        <div class="experience-meta">
+                            <div class="experience-name">${experience.author_name}</div>
+                            <div class="experience-date">${new Date(experience.created_at).toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="experience-title">${experience.title}</div>
+                <div class="experience-category">${experience.category}</div>
+                <div class="experience-content">${experience.content}</div>
+            `;
+
+            return card;
+        }
+    </script>
+
+        /* Services Cards Section */
+        .services-section {
+            padding: 80px 40px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        .services-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            border-color: var(--secondary-color);
+        }
+
+        .service-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-color), #7a2a2a);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 32px;
+            color: white;
+        }
+
+        .service-card h3 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .service-card p {
+            color: var(--text-light);
+            line-height: 1.6;
+            margin-bottom: 25px;
+            font-size: 15px;
+        }
+
+        .service-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: auto;
+        }
+
+        .service-stats span {
+            background: rgba(236, 195, 92, 0.1);
+            color: var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .modal-header h2 {
+            color: var(--primary-color);
+            font-size: 28px;
+            margin: 0;
+        }
+
+        .close {
+            font-size: 30px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(91, 31, 31, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        /* Experience Section */
+        .experience-section {
+            padding: 80px 40px;
+            background: white;
+        }
+
+        .experience-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .experience-card {
+            background: var(--bg-light);
+            border-radius: 15px;
+            padding: 30px;
+            border-left: 5px solid var(--secondary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .experience-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .experience-header {
+            display: flex;
+            justify-content: between;
+            align-items: start;
+            margin-bottom: 20px;
+        }
+
+        .experience-author {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .experience-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), #7a2a2a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .experience-meta {
+            flex: 1;
+        }
+
+        .experience-name {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 16px;
+        }
+
+        .experience-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .experience-category {
+            background: rgba(91, 31, 31, 0.1);
+            color: var(--primary-color);
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .experience-content {
+            color: var(--text-light);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .experience-date {
+            color: var(--text-light);
+            font-size: 13px;
+        }
+
         @media (max-width: 768px) {
+            .services-section,
+            .experience-section {
+                padding: 60px 20px;
+            }
+
+            .services-grid,
+            .experience-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .service-card {
+                padding: 30px 20px;
+            }
+
+            .modal-content {
+                padding: 30px 20px;
+                width: 95%;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .form-actions button {
+                width: 100%;
+            }
+        }
             .fixed-logout {
                 top: 80px !important; /* Below sidebar toggle */
                 right: 15px !important;
