@@ -4,25 +4,82 @@ require_once '../includes/db_config.php';
 
 // Require authentication
 requireLogin();
+
+// Debug: Check database connection
+$db_connected = false;
+$db_error = '';
+$alumni = [];
+
+try {
+    // Test the database connection
+    $pdo->query("SELECT 1");
+    $db_connected = true;
+    
+    // First, check if the users table exists
+    $tables = $pdo->query("SHOW TABLES LIKE 'users'")->fetchAll();
+    if (empty($tables)) {
+        throw new Exception("The 'users' table does not exist in the database");
+    }
+    
+    // Get all users with all fields
+    $query = "SELECT * FROM users";
+    $stmt = $pdo->query($query);
+    $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Process all users
+    foreach ($all_users as $user) {
+        // Map the user data to our expected format
+        $alumni[] = [
+            'id' => $user['id'] ?? null,
+            'name' => $user['name'] ?? 'No Name',
+            'email' => $user['email'] ?? ($user['email_id'] ?? 'No Email'),
+            'photo' => $user['profile_pic'] ?? $user['profile_picture'] ?? null,
+            'institute' => $user['institute'] ?? 'Not specified',
+            'branch' => $user['branch'] ?? 'Not specified',
+            'designation' => $user['current_job'] ?? ($user['designation'] ?? 'Not specified'),
+            'year_of_graduation' => $user['graduation_year'] ?? ($user['batch'] ?? 'N/A')
+        ];
+    }
+    
+} catch (PDOException $e) {
+    $db_error = "PDO Error: " . $e->getMessage();
+    error_log($db_error);
+} catch (Exception $e) {
+    $db_error = "Error: " . $e->getMessage();
+    error_log($db_error);
+    $debug_error = $db_error;
+}
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alumni Directory - Alumni Connect</title>
     <link rel="stylesheet" href="../assets/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary-color: #5b1f1f;
+            --primary-light: #7a2a2a;
+            --primary-dark: #4a1818;
             --secondary-color: #ecc35c;
-            --bg-light: #f8f9fa;
-            --text-dark: #1a1a1a;
-            --text-light: #6b7280;
-            --white: #ffffff;
-            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
-            --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.1);
-            --border-radius: 12px;
-            --border-radius-lg: 20px;
+            --bg-light: #f5f5f5;
+            --bg-white: #ffffff;
+            --text-dark: #2c3e50;
+            --text-medium: #5a6c7d;
+            --text-light: #95a5a6;
+            --border-color: #e0e0e0;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
@@ -32,225 +89,180 @@ requireLogin();
             line-height: 1.6;
         }
 
-        /* Professional Header Section */
+        /* Header */
         .directory-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, #7a2a2a 100%);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
             color: white;
-            padding: 60px 40px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .directory-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1.5" fill="rgba(255,255,255,0.1)"/></svg>');
-            opacity: 0.3;
+            padding: 48px 24px;
+            text-align: center;
         }
 
         .header-content {
             max-width: 1200px;
             margin: 0 auto;
-            position: relative;
-            z-index: 2;
         }
 
         .header-title {
-            font-size: 48px;
+            font-size: 36px;
             font-weight: 700;
-            margin-bottom: 15px;
-            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
         }
 
         .header-subtitle {
-            font-size: 18px;
+            font-size: 16px;
             opacity: 0.9;
-            text-align: center;
             font-weight: 400;
-            margin-bottom: 40px;
         }
 
-        /* Enhanced Search Section */
-        .search-section {
-            background: white;
-            padding: 40px;
-            margin: -30px 40px 0;
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-xl);
+        /* Search and Filter Section */
+        .controls-section {
+            background: var(--bg-white);
+            padding: 24px;
+            margin: -32px 24px 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-md);
             position: relative;
-            z-index: 3;
+            z-index: 10;
         }
 
-        .search-container {
-            max-width: 800px;
+        .controls-container {
+            max-width: 1200px;
             margin: 0 auto;
         }
 
-        .search-form {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 20px;
-            align-items: end;
-        }
-
-        .search-input-wrapper {
+        .search-wrapper {
             position: relative;
+            margin-bottom: 20px;
         }
 
         .search-input {
             width: 100%;
-            padding: 18px 25px 18px 55px;
-            border: 2px solid #e5e7eb;
-            border-radius: var(--border-radius);
-            font-size: 16px;
-            background: white;
-            transition: all 0.3s ease;
+            padding: 12px 16px 12px 44px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 15px;
+            background: var(--bg-white);
+            transition: all 0.2s ease;
             outline: none;
         }
 
         .search-input:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(91, 31, 31, 0.1);
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(236, 195, 92, 0.1);
         }
 
         .search-icon {
             position: absolute;
-            left: 18px;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
             color: var(--text-light);
+            pointer-events: none;
         }
 
-        .search-button {
-            padding: 18px 32px;
-            background: linear-gradient(135deg, var(--primary-color), #7a2a2a);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .search-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(91, 31, 31, 0.3);
-        }
-
-        /* Filter Section */
-        .filter-section {
-            background: white;
-            padding: 30px 40px;
-            margin-bottom: 40px;
-        }
-
-        .filter-grid {
-            max-width: 1200px;
-            margin: 0 auto;
+        .filters-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            gap: 16px;
         }
 
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .filter-label {
-            font-size: 14px;
+        .filter-group label {
+            display: block;
+            font-size: 13px;
             font-weight: 600;
-            color: var(--text-dark);
-            margin-bottom: 5px;
+            color: var(--text-medium);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .filter-select {
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            background: white;
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-white);
             font-size: 14px;
             color: var(--text-dark);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+        }
+
+        .filter-select:hover {
+            border-color: var(--text-medium);
         }
 
         .filter-select:focus {
-            border-color: var(--primary-color);
+            border-color: var(--secondary-color);
             outline: none;
+            box-shadow: 0 0 0 3px rgba(236, 195, 92, 0.1);
         }
 
         /* Results Section */
         .results-section {
-            padding: 0 40px 80px;
+            padding: 0 24px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .results-header {
-            max-width: 1200px;
-            margin: 0 auto 40px;
+            margin-bottom: 24px;
             text-align: center;
         }
 
         .results-title {
-            font-size: 32px;
-            font-weight: 700;
+            font-size: 24px;
+            font-weight: 600;
             color: var(--text-dark);
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .results-count {
-            color: var(--text-light);
-            font-size: 16px;
+            color: var(--text-medium);
+            font-size: 14px;
         }
 
-        /* Enhanced Alumni Grid */
+        /* Alumni Grid */
         .alumni-grid {
-            max-width: 1200px;
-            margin: 0 auto;
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 30px;
+            gap: 24px;
         }
 
+        /* Alumni Card */
         .alumni-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            padding: 30px;
+            background: var(--bg-white);
+            border-radius: 8px;
+            overflow: hidden;
             box-shadow: var(--shadow);
             transition: all 0.3s ease;
-            border: 1px solid #f3f4f6;
-            position: relative;
-            overflow: hidden;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
         }
 
         .alumni-card:hover {
-            transform: translateY(-8px);
-            box-shadow: var(--shadow-xl);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
             border-color: var(--secondary-color);
         }
 
         .card-header {
             text-align: center;
-            margin-bottom: 25px;
+            padding: 28px 20px 20px;
+            background: linear-gradient(to bottom, #fafafa, var(--bg-white));
+            border-bottom: 1px solid var(--border-color);
         }
 
         .alumni-avatar {
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            margin: 0 auto 15px;
+            margin: 0 auto 16px;
             overflow: hidden;
-            border: 3px solid var(--secondary-color);
-            box-shadow: var(--shadow);
+            border: 3px solid var(--bg-white);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .alumni-avatar img {
@@ -260,151 +272,206 @@ requireLogin();
         }
 
         .alumni-name {
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: 600;
             color: var(--text-dark);
-            margin-bottom: 5px;
+            margin-bottom: 4px;
+        }
+
+        .alumni-designation {
+            color: var(--primary-color);
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .alumni-institute {
+            color: var(--text-medium);
+            font-size: 13px;
+            margin-bottom: 12px;
         }
 
         .alumni-batch {
-            color: var(--secondary-color);
-            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, rgba(236, 195, 92, 0.15), rgba(236, 195, 92, 0.25));
+            color: var(--primary-color);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
             font-weight: 600;
+        }
+
+        .card-body {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-icon {
+            width: 18px;
+            height: 18px;
+            color: var(--secondary-color);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .info-content {
+            flex: 1;
+        }
+
+        .info-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-dark);
+            word-break: break-word;
+        }
+
+        .info-value a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .info-value a:hover {
+            color: var(--secondary-color);
+        }
+
+        /* Empty State */
+        .no-results {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--bg-white);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .no-results i {
+            color: var(--text-light);
+            margin-bottom: 16px;
+        }
+
+        .no-results h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-dark);
             margin-bottom: 8px;
         }
 
-        .alumni-location {
-            color: var(--text-light);
+        .no-results p {
             font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            margin-bottom: 20px;
-        }
-
-        .alumni-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 25px;
-        }
-
-        .tag {
-            background: linear-gradient(135deg, rgba(236, 195, 92, 0.1), rgba(91, 31, 31, 0.05));
-            color: var(--primary-color);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            border: 1px solid rgba(236, 195, 92, 0.3);
-        }
-
-        .card-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-color), #7a2a2a);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(91, 31, 31, 0.3);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--primary-color);
-            border: 2px solid var(--primary-color);
-        }
-
-        .btn-secondary:hover {
-            background: var(--primary-color);
-            color: white;
-            transform: translateY(-2px);
+            color: var(--text-medium);
         }
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .directory-header {
-                padding: 40px 20px;
-            }
-
-            .header-title {
-                font-size: 36px;
-            }
-
-            .search-section {
-                margin: -20px 20px 0;
-                padding: 30px 20px;
-            }
-
-            .search-form {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .filter-section {
-                padding: 20px;
-            }
-
-            .filter-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .results-section {
-                padding: 0 20px 60px;
-            }
-
-            .alumni-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-
-            .alumni-card {
-                padding: 25px 20px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .directory-header {
-                padding: 30px 15px;
+                padding: 36px 16px;
             }
 
             .header-title {
                 font-size: 28px;
             }
 
-            .search-section {
-                margin: -15px 15px 0;
-                padding: 25px 15px;
+            .header-subtitle {
+                font-size: 14px;
+            }
+
+            .controls-section {
+                margin: -24px 16px 16px;
+                padding: 20px;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .results-section {
+                padding: 0 16px 40px;
+            }
+
+            .alumni-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .results-title {
+                font-size: 20px;
             }
         }
+
+        @media (max-width: 480px) {
+            .header-title {
+                font-size: 24px;
+            }
+
+            .controls-section {
+                padding: 16px;
+            }
+
+            .card-header {
+                padding: 20px 16px 16px;
+            }
+
+            .card-body {
+                padding: 16px;
+            }
+        }
+
+        /* Smooth transitions */
+        .alumni-card {
+            opacity: 0;
+            animation: fadeInUp 0.4s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Stagger animation for cards */
+        .alumni-card:nth-child(1) { animation-delay: 0.05s; }
+        .alumni-card:nth-child(2) { animation-delay: 0.1s; }
+        .alumni-card:nth-child(3) { animation-delay: 0.15s; }
+        .alumni-card:nth-child(4) { animation-delay: 0.2s; }
+        .alumni-card:nth-child(5) { animation-delay: 0.25s; }
+        .alumni-card:nth-child(6) { animation-delay: 0.3s; }
     </style>
 </head>
 <body>
     <?php include '../sidebar.php'; ?>
 
     <div class="main-content" id="mainContent">
-        <!-- Professional Directory Header -->
+        <!-- Header -->
         <div class="directory-header">
             <div class="header-content">
                 <h1 class="header-title">Alumni Directory</h1>
@@ -412,63 +479,47 @@ requireLogin();
             </div>
         </div>
 
-        <!-- Enhanced Search Interface -->
-        <div class="search-section">
-            <div class="search-container">
-                <form class="search-form">
-                    <div class="search-input-wrapper">
-                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="M21 21l-4.35-4.35"></path>
-                        </svg>
-                        <input type="text" class="search-input" placeholder="Search by name, location, or field..." id="alumniSearch">
+        <!-- Search and Filters -->
+        <div class="controls-section">
+            <div class="controls-container">
+                <!-- Search -->
+                <div class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Search by name, designation, or institute..." id="alumniSearch">
+                </div>
+
+                <!-- Filters -->
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label>Graduation Year</label>
+                        <select class="filter-select" id="batchFilter">
+                            <option value="">All Years</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                            <option value="2021">2021</option>
+                            <option value="2020">2020</option>
+                            <option value="2019">2019</option>
+                            <option value="2018">2018</option>
+                        </select>
                     </div>
-                    <button type="submit" class="search-button">Search Alumni</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Filter Controls -->
-        <div class="filter-section">
-            <div class="filter-grid">
-                <div class="filter-group">
-                    <label class="filter-label">Graduation Year</label>
-                    <select class="filter-select" id="batchFilter">
-                        <option value="">All Years</option>
-                        <option value="2023">2023</option>
-                        <option value="2022">2022</option>
-                        <option value="2021">2021</option>
-                        <option value="2020">2020</option>
-                        <option value="2019">2019</option>
-                        <option value="2018">2018</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Location</label>
-                    <select class="filter-select" id="locationFilter">
-                        <option value="">All Locations</option>
-                        <option value="bengaluru">Bengaluru</option>
-                        <option value="delhi">Delhi</option>
-                        <option value="mumbai">Mumbai</option>
-                        <option value="usa">USA</option>
-                        <option value="uk">UK</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Field of Work</label>
-                    <select class="filter-select" id="fieldFilter">
-                        <option value="">All Fields</option>
-                        <option value="technology">Technology</option>
-                        <option value="finance">Finance</option>
-                        <option value="healthcare">Healthcare</option>
-                        <option value="education">Education</option>
-                        <option value="entrepreneur">Entrepreneur</option>
-                    </select>
+                    <div class="filter-group">
+                        <label>Institute</label>
+                        <select class="filter-select" id="instituteFilter">
+                            <option value="">All Institutes</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Branch</label>
+                        <select class="filter-select" id="branchFilter">
+                            <option value="">All Branches</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Search Results -->
+        <!-- Results -->
         <div class="results-section">
             <div class="results-header">
                 <h2 class="results-title">Alumni Profiles</h2>
@@ -476,219 +527,192 @@ requireLogin();
             </div>
 
             <div class="alumni-grid">
-                <div class="alumni-card">
-                    <div class="card-header">
-                        <div class="alumni-avatar">
-                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop" alt="John Anderson">
-                        </div>
-                        <div class="alumni-name">John Anderson</div>
-                        <div class="alumni-batch">Class of 2018</div>
-                        <div class="alumni-location">📍 San Francisco, USA</div>
-                        <div class="alumni-tags">
-                            <span class="tag">Technology</span>
-                            <span class="tag">Entrepreneur</span>
-                        </div>
+                <?php 
+                if (isset($debug_error)): ?>
+                    <div class="no-results">
+                        <i class="fas fa-exclamation-triangle fa-3x"></i>
+                        <h3>Database Error</h3>
+                        <p><?php echo htmlspecialchars($debug_error); ?></p>
                     </div>
-                    <div class="card-actions">
-                        <button class="btn btn-primary">Connect</button>
-                        <button class="btn btn-secondary">Message</button>
+                <?php elseif (empty($alumni)): ?>
+                    <div class="no-results">
+                        <i class="fas fa-users fa-3x"></i>
+                        <h3>No Alumni Found</h3>
+                        <p>The directory is currently empty.</p>
                     </div>
-                </div>
-
-                <div class="alumni-card">
-                    <div class="card-header">
-                        <div class="alumni-avatar">
-                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop" alt="Sarah Mitchell">
+                <?php else: ?>
+                    <?php foreach ($alumni as $alumnus): ?>
+                        <div class="alumni-card" 
+                             data-name="<?php echo strtolower(htmlspecialchars($alumnus['name'])); ?>"
+                             data-batch="<?php echo htmlspecialchars($alumnus['year_of_graduation']); ?>"
+                             data-institute="<?php echo strtolower(htmlspecialchars($alumnus['institute'])); ?>"
+                             data-branch="<?php echo strtolower(htmlspecialchars($alumnus['branch'])); ?>"
+                             data-designation="<?php echo strtolower(htmlspecialchars($alumnus['designation'])); ?>">
+                            <div class="card-header">
+                                <div class="alumni-avatar">
+                                    <img src="<?php 
+                                        if (!empty($alumnus['photo'])) {
+                                            echo htmlspecialchars($alumnus['photo']);
+                                        } else {
+                                            echo 'https://ui-avatars.com/api/?name=' . urlencode($alumnus['name']) . '&size=160&background=5b1f1f&color=fff&bold=true';
+                                        }
+                                    ?>" alt="<?php echo htmlspecialchars($alumnus['name']); ?>">
+                                </div>
+                                <h3 class="alumni-name"><?php echo htmlspecialchars($alumnus['name']); ?></h3>
+                                <?php if (!empty($alumnus['designation']) && $alumnus['designation'] !== 'Not specified'): ?>
+                                    <p class="alumni-designation"><?php echo htmlspecialchars($alumnus['designation']); ?></p>
+                                <?php endif; ?>
+                                <?php if (!empty($alumnus['institute']) && $alumnus['institute'] !== 'Not specified'): ?>
+                                    <p class="alumni-institute"><?php echo htmlspecialchars($alumnus['institute']); ?></p>
+                                <?php endif; ?>
+                                <?php if (!empty($alumnus['year_of_graduation']) && $alumnus['year_of_graduation'] !== 'N/A'): ?>
+                                    <span class="alumni-batch">
+                                        <i class="fas fa-graduation-cap"></i>
+                                        Class of <?php echo htmlspecialchars($alumnus['year_of_graduation']); ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="card-body">
+                                <?php if (!empty($alumnus['branch']) && $alumnus['branch'] !== 'Not specified'): ?>
+                                    <div class="info-item">
+                                        <i class="fas fa-book info-icon"></i>
+                                        <div class="info-content">
+                                            <div class="info-label">Branch</div>
+                                            <div class="info-value"><?php echo htmlspecialchars($alumnus['branch']); ?></div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if (!empty($alumnus['email']) && $alumnus['email'] !== 'No Email'): ?>
+                                    <div class="info-item">
+                                        <i class="fas fa-envelope info-icon"></i>
+                                        <div class="info-content">
+                                            <div class="info-label">Email</div>
+                                            <div class="info-value">
+                                                <a href="mailto:<?php echo htmlspecialchars($alumnus['email']); ?>">
+                                                    <?php echo htmlspecialchars($alumnus['email']); ?>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                        <div class="alumni-name">Sarah Mitchell</div>
-                        <div class="alumni-batch">Class of 2019</div>
-                        <div class="alumni-location">📍 London, UK</div>
-                        <div class="alumni-tags">
-                            <span class="tag">Finance</span>
-                            <span class="tag">Mentor</span>
-                        </div>
-                    </div>
-                    <div class="card-actions">
-                        <button class="btn btn-primary">Connect</button>
-                        <button class="btn btn-secondary">Message</button>
-                    </div>
-                </div>
-
-                <div class="alumni-card">
-                    <div class="card-header">
-                        <div class="alumni-avatar">
-                            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop" alt="Michael Chen">
-                        </div>
-                        <div class="alumni-name">Michael Chen</div>
-                        <div class="alumni-batch">Class of 2017</div>
-                        <div class="alumni-location">📍 Singapore</div>
-                        <div class="alumni-tags">
-                            <span class="tag">AI/ML</span>
-                            <span class="tag">Research</span>
-                        </div>
-                    </div>
-                    <div class="card-actions">
-                        <button class="btn btn-primary">Connect</button>
-                        <button class="btn btn-secondary">Message</button>
-                    </div>
-                </div>
-
-                <div class="alumni-card">
-                    <div class="card-header">
-                        <div class="alumni-avatar">
-                            <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop" alt="Emily Rodriguez">
-                        </div>
-                        <div class="alumni-name">Emily Rodriguez</div>
-                        <div class="alumni-batch">Class of 2020</div>
-                        <div class="alumni-location">📍 Bengaluru, India</div>
-                        <div class="alumni-tags">
-                            <span class="tag">Product Design</span>
-                            <span class="tag">UX</span>
-                        </div>
-                    </div>
-                    <div class="card-actions">
-                        <button class="btn btn-primary">Connect</button>
-                        <button class="btn btn-secondary">Message</button>
-                    </div>
-                </div>
-
-                <div class="alumni-card">
-                    <div class="card-header">
-                        <div class="alumni-avatar">
-                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop" alt="David Thompson">
-                        </div>
-                        <div class="alumni-name">David Thompson</div>
-                        <div class="alumni-batch">Class of 2016</div>
-                        <div class="alumni-location">📍 New York, USA</div>
-                        <div class="alumni-tags">
-                            <span class="tag">Marketing</span>
-                            <span class="tag">Strategy</span>
-                        </div>
-                    </div>
-                    <div class="card-actions">
-                        <button class="btn btn-primary">Connect</button>
-                        <button class="btn btn-secondary">Message</button>
-                    </div>
-                </div>
-
-                <div class="alumni-card">
-                    <div class="card-header">
-                        <div class="alumni-avatar">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop" alt="Lisa Patel">
-                        </div>
-                        <div class="alumni-name">Lisa Patel</div>
-                        <div class="alumni-batch">Class of 2021</div>
-                        <div class="alumni-location">📍 Mumbai, India</div>
-                        <div class="alumni-tags">
-                            <span class="tag">Healthcare</span>
-                            <span class="tag">Social Impact</span>
-                        </div>
-                    </div>
-                    <div class="card-actions">
-                        <button class="btn btn-primary">Connect</button>
-                        <button class="btn btn-secondary">Message</button>
-                    </div>
-                </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 
-    <!-- Include main JavaScript file -->
     <script src="../assets/js/script.js"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize dropdown toggles for the alumni menu
-            const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
-            dropdownToggles.forEach(toggle => {
-                toggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const parent = this.parentElement;
-                    
-                    // Close other dropdowns
-                    document.querySelectorAll('.has-dropdown').forEach(item => {
-                        if (item !== parent) {
-                            item.classList.remove('active');
-                        }
-                    });
-                    
-                    // Toggle current dropdown
-                    parent.classList.toggle('active');
-                });
-            });
-
             const alumniSearch = document.getElementById('alumniSearch');
             const batchFilter = document.getElementById('batchFilter');
-            const locationFilter = document.getElementById('locationFilter');
-            const fieldFilter = document.getElementById('fieldFilter');
+            const instituteFilter = document.getElementById('instituteFilter');
+            const branchFilter = document.getElementById('branchFilter');
             const profileCards = document.querySelectorAll('.alumni-card');
             const resultsCount = document.getElementById('resultsCount');
 
-            // Enhanced search functionality
+            populateFilters();
+
             function searchAlumni() {
                 const searchTerm = alumniSearch.value.toLowerCase();
                 const batchValue = batchFilter.value;
-                const locationValue = locationFilter.value.toLowerCase();
-                const fieldValue = fieldFilter.value.toLowerCase();
+                const instituteValue = instituteFilter.value.toLowerCase();
+                const branchValue = branchFilter.value.toLowerCase();
 
                 let visibleCount = 0;
 
                 profileCards.forEach(card => {
-                    const profileName = card.querySelector('.alumni-name').textContent.toLowerCase();
-                    const profileBatch = card.querySelector('.alumni-batch').textContent.toLowerCase();
-                    const profileLocation = card.querySelector('.alumni-location').textContent.toLowerCase();
-                    const profileTags = Array.from(card.querySelectorAll('.tag')).map(tag => tag.textContent.toLowerCase());
+                    const profileName = card.dataset.name || '';
+                    const profileBatch = card.dataset.batch || '';
+                    const profileInstitute = card.dataset.institute || '';
+                    const profileBranch = card.dataset.branch || '';
+                    const profileDesignation = card.dataset.designation || '';
 
                     const matchesSearch = searchTerm === '' ||
                         profileName.includes(searchTerm) ||
-                        profileTags.some(tag => tag.includes(searchTerm));
+                        profileDesignation.includes(searchTerm) ||
+                        profileInstitute.includes(searchTerm) ||
+                        profileBranch.includes(searchTerm);
 
-                    const matchesBatch = batchValue === '' ||
-                        profileBatch.includes(batchValue);
+                    const matchesBatch = batchValue === '' || profileBatch === batchValue;
+                    const matchesInstitute = instituteValue === '' || profileInstitute.includes(instituteValue);
+                    const matchesBranch = branchValue === '' || profileBranch.includes(branchValue);
 
-                    const matchesLocation = locationValue === '' ||
-                        profileLocation.includes(locationValue);
-
-                    const matchesField = fieldValue === '' ||
-                        profileTags.some(tag => tag.includes(fieldValue));
-
-                    if (matchesSearch && matchesBatch && matchesLocation && matchesField) {
-                        card.style.display = 'block';
-                        card.style.opacity = '1';
-                        card.style.transform = 'translateY(0)';
+                    if (matchesSearch && matchesBatch && matchesInstitute && matchesBranch) {
+                        card.style.display = 'flex';
                         visibleCount++;
                     } else {
                         card.style.display = 'none';
                     }
                 });
 
-                // Update results count
                 if (visibleCount === profileCards.length) {
-                    resultsCount.textContent = 'Showing all alumni';
+                    resultsCount.textContent = `Showing all ${visibleCount} alumni`;
+                } else if (visibleCount === 0) {
+                    resultsCount.textContent = 'No alumni found';
                 } else {
-                    resultsCount.textContent = `Showing ${visibleCount} alumni`;
+                    resultsCount.textContent = `Showing ${visibleCount} of ${profileCards.length} alumni`;
                 }
             }
 
-            // Event listeners
-            if (alumniSearch) {
-                alumniSearch.addEventListener('input', searchAlumni);
+            function populateFilters() {
+                const institutes = new Set();
+                const branches = new Set();
+
+                profileCards.forEach(card => {
+                    const institute = card.dataset.institute;
+                    const branch = card.dataset.branch;
+
+                    if (institute && institute !== 'not specified') {
+                        institutes.add(institute);
+                    }
+                    if (branch && branch !== 'not specified') {
+                        branches.add(branch);
+                    }
+                });
+
+                Array.from(institutes).sort().forEach(institute => {
+                    const option = document.createElement('option');
+                    option.value = institute;
+                    option.textContent = institute.split(' ').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ');
+                    instituteFilter.appendChild(option);
+                });
+
+                Array.from(branches).sort().forEach(branch => {
+                    const option = document.createElement('option');
+                    option.value = branch;
+                    option.textContent = branch.split(' ').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ');
+                    branchFilter.appendChild(option);
+                });
             }
 
-            if (batchFilter) {
-                batchFilter.addEventListener('change', searchAlumni);
-            }
+            if (alumniSearch) alumniSearch.addEventListener('input', searchAlumni);
+            if (batchFilter) batchFilter.addEventListener('change', searchAlumni);
+            if (instituteFilter) instituteFilter.addEventListener('change', searchAlumni);
+            if (branchFilter) branchFilter.addEventListener('change', searchAlumni);
 
-            if (locationFilter) {
-                locationFilter.addEventListener('change', searchAlumni);
-            }
-
-            if (fieldFilter) {
-                fieldFilter.addEventListener('change', searchAlumni);
-            }
-
-            // Initialize
-            searchAlumni();
+            const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+            dropdownToggles.forEach(toggle => {
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const parent = this.parentElement;
+                    
+                    document.querySelectorAll('.has-dropdown').forEach(item => {
+                        if (item !== parent) {
+                            item.classList.remove('active');
+                        }
+                    });
+                    
+                    parent.classList.toggle('active');
+                });
+            });
         });
     </script>
 </body>

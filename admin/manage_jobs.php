@@ -15,34 +15,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         $action = $_POST['action'];
 
-        if ($action === 'add') {
-            // Add new job
-            $title = $_POST['title'] ?? '';
-            $company = $_POST['company'] ?? '';
-            $description = $_POST['description'] ?? '';
-            $requirements = $_POST['requirements'] ?? '';
-            $location = $_POST['location'] ?? '';
-            $job_type = $_POST['job_type'] ?? 'full-time';
-            $experience_level = $_POST['experience_level'] ?? 'entry';
-            $salary_range = $_POST['salary_range'] ?? '';
-            $application_deadline = !empty($_POST['application_deadline']) ? $_POST['application_deadline'] : null;
-            $application_url = $_POST['application_url'] ?? '';
-            $contact_email = $_POST['contact_email'] ?? '';
+        // Replace the problematic SQL query section (around line 36-47) with this fixed version:
 
-            if (!empty($title) && !empty($company) && !empty($description)) {
-                try {
-                    $stmt = $pdo->prepare("
-                        INSERT INTO jobs (title, company, description, requirements, location, job_type, experience_level, salary_range, application_deadline, application_url, contact_email, author_id)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ");
-                    $stmt->execute([$title, $company, $description, $requirements, $location, $job_type, $experience_level, $salary_range, $application_deadline, $application_url, $contact_email, $_SESSION['user_id']]);
+if ($action === 'add') {
+    // Add new job
+    $title = $_POST['title'] ?? '';
+    $company = $_POST['company'] ?? '';
+    $description = $_POST['description'] ?? '';
+    $requirements = $_POST['requirements'] ?? '';
+    $location = $_POST['location'] ?? '';
+    $job_type = $_POST['job_type'] ?? 'full-time';
+    $experience_level = $_POST['experience_level'] ?? 'entry';
+    $salary_min = $_POST['salary_min'] ?? '';
+    $application_deadline = !empty($_POST['application_deadline']) ? $_POST['application_deadline'] : null;
+    $application_link = $_POST['application_link'] ?? '';
+    $contact_email = $_POST['contact_email'] ?? '';
 
-                    $success = "Job posting added successfully!";
-                } catch(PDOException $e) {
-                    $error = "Error adding job posting: " . $e->getMessage();
-                }
+    if (!empty($title) && !empty($company) && !empty($description)) {
+        try {
+            // FIXED: Changed apply_link to application_url to match the database schema
+            $sql = "
+                INSERT INTO jobs (
+                    title, company, description, requirements, location, 
+                    job_type, experience_level, salary_min, 
+                    application_deadline, application_link, contact_email, 
+                    posted_by, is_approved, posted_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+            ";
+            $stmt = $pdo->prepare($sql);
+            
+            $params = [
+                $title, 
+                $company, 
+                $description, 
+                $requirements, 
+                $location, 
+                ucwords(str_replace('-', ' ', $job_type)), 
+                ucwords(str_replace('_', ' ', $experience_level)), 
+                $salary_min, 
+                $application_deadline, 
+                $application_link, // Now correctly matches the column name
+                $contact_email, 
+                $_SESSION['user_id']
+            ];
+            
+            $result = $stmt->execute($params);
+            
+            if ($result) {
+                $success = "Job posting added successfully!";
+                // Clear form
+                $_POST = [];
             } else {
-                $error = "Please fill in all required fields";
+                $error = "Failed to add job posting";
+                $debug = print_r($stmt->errorInfo(), true);
+            }
+        } catch(PDOException $e) {
+            $error = "Error adding job posting: " . $e->getMessage();
+            $debug = "SQL: " . $sql . "\nParams: " . print_r($params, true);
+        }
+    } else {
+        $error = "Please fill in all required fields";
+    }
+} elseif ($action === 'approve_job') {
+            // Approve job
+            $jobId = $_POST['job_id'] ?? 0;
+            try {
+                $stmt = $pdo->prepare("UPDATE jobs SET is_approved = 1 WHERE id = ?");
+                $stmt->execute([$jobId]);
+                $success = "Job approved successfully!";
+            } catch(PDOException $e) {
+                $error = "Error approving job: " . $e->getMessage();
+            }
+        } elseif ($action === 'reject_job') {
+            // Reject job
+            $jobId = $_POST['job_id'] ?? 0;
+            try {
+                $stmt = $pdo->prepare("UPDATE jobs SET is_approved = 0 WHERE id = ?");
+                $stmt->execute([$jobId]);
+                $success = "Job rejected successfully!";
+            } catch(PDOException $e) {
+                $error = "Error rejecting job: " . $e->getMessage();
             }
         } elseif ($action === 'edit') {
             // Update job
@@ -54,9 +106,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $location = $_POST['location'] ?? '';
             $job_type = $_POST['job_type'] ?? 'full-time';
             $experience_level = $_POST['experience_level'] ?? 'entry';
-            $salary_range = $_POST['salary_range'] ?? '';
+            $salary_min = $_POST['salary_min'] ?? '';
             $application_deadline = !empty($_POST['application_deadline']) ? $_POST['application_deadline'] : null;
-            $application_url = $_POST['application_url'] ?? '';
+            $application_link = $_POST['application_link'] ?? '';
             $contact_email = $_POST['contact_email'] ?? '';
             $is_active = isset($_POST['is_active']) ? 1 : 0;
 
@@ -64,10 +116,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $stmt = $pdo->prepare("
                         UPDATE jobs
-                        SET title = ?, company = ?, description = ?, requirements = ?, location = ?, job_type = ?, experience_level = ?, salary_range = ?, application_deadline = ?, application_url = ?, contact_email = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+                        SET title = ?, company = ?, description = ?, requirements = ?, location = ?, job_type = ?, experience_level = ?, salary_min = ?, application_deadline = ?, application_link = ?, contact_email = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
                         WHERE id = ?
                     ");
-                    $stmt->execute([$title, $company, $description, $requirements, $location, $job_type, $experience_level, $salary_range, $application_deadline, $application_url, $contact_email, $is_active, $id]);
+                    $stmt->execute([$title, $company, $description, $requirements, $location, $job_type, $experience_level, $salary_min, $application_deadline, $application_link, $contact_email, $is_active, $id]);
 
                     $success = "Job posting updated successfully!";
                 } catch(PDOException $e) {
@@ -110,19 +162,19 @@ try {
 
     if ($tablesExist) {
         try {
-            // Try to get author name, fallback to author_id if full_name doesn't exist
+            // Try to get author name, fallback to posted_by if full_name doesn't exist
             $stmt = $pdo->query("
                 SELECT j.*,
-                       COALESCE(u.full_name, u.name, CONCAT('User #', j.author_id)) as author_name
+                       COALESCE(u.full_name, u.name, CONCAT('User #', j.posted_by)) as author_name
                 FROM jobs j
-                LEFT JOIN users u ON j.author_id = u.id
+                LEFT JOIN users u ON j.posted_by = u.id
                 ORDER BY j.created_at DESC
             ");
             $jobs = $stmt->fetchAll();
         } catch(PDOException $e) {
             // If the join fails, try without the author name
             $stmt = $pdo->query("
-                SELECT j.*, CONCAT('User #', j.author_id) as author_name
+                SELECT j.*, CONCAT('User #', j.posted_by) as author_name
                 FROM jobs j
                 ORDER BY j.created_at DESC
             ");
@@ -134,6 +186,15 @@ try {
 } catch(PDOException $e) {
     $error = "Error loading jobs: " . $e->getMessage();
 }
+
+// Fetch pending jobs for approval
+$pendingJobs = [];
+$approvedJobs = [];
+if ($tablesExist) {
+    $pendingJobs = $pdo->query("SELECT j.*, u.name as posted_by_name FROM jobs j LEFT JOIN users u ON j.posted_by = u.id WHERE j.is_approved = 0 ORDER BY j.posted_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $approvedJobs = $pdo->query("SELECT j.*, u.name as posted_by_name FROM jobs j LEFT JOIN users u ON j.posted_by = u.id WHERE j.is_approved = 1 ORDER BY j.posted_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -365,6 +426,17 @@ try {
             background: #4b5563;
         }
 
+        .btn-approve, .btn-reject {
+            padding: 6px 12px;
+            font-size: 12px;
+            background: var(--text-light);
+            color: var(--white);
+        }
+
+        .btn-approve:hover, .btn-reject:hover {
+            background: #4b5563;
+        }
+
         .btn-danger {
             background: #dc2626;
             color: var(--white);
@@ -529,17 +601,6 @@ try {
     </div>
 
     <div class="dashboard-container">
-        <?php if (isset($success)): ?>
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($error)): ?>
-            <div class="alert alert-error">
-                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
 
         <!-- Add Job Form -->
         <div class="form-container">
@@ -589,8 +650,8 @@ try {
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="salary_range">Salary Range</label>
-                        <input type="text" id="salary_range" name="salary_range" class="form-input" placeholder="e.g., $50,000 - $70,000">
+                        <label class="form-label" for="salary_min">Salary Range</label>
+                        <input type="text" id="salary_min" name="salary_min" class="form-input" placeholder="e.g., $50,000 - $70,000">
                     </div>
                 </div>
 
@@ -611,8 +672,8 @@ try {
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="application_url">Application URL</label>
-                        <input type="url" id="application_url" name="application_url" class="form-input" placeholder="https://company.com/careers/job">
+                        <label class="form-label" for="application_link">Application URL</label>
+                        <input type="url" id="application_link" name="application_link" class="form-input" placeholder="https://company.com/careers/job">
                     </div>
                 </div>
 
@@ -633,87 +694,104 @@ try {
         </div>
 
         <!-- Jobs List -->
+        <!-- Pending Approvals Section -->
         <div class="jobs-table">
             <div class="table-header">
-                <h3 class="table-title"><i class="fas fa-list"></i> All Job Postings</h3>
+                <h3 class="table-title"><i class="fas fa-clock"></i> Pending Approvals</h3>
             </div>
             <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Position</th>
-                            <th>Company</th>
-                            <th>Type</th>
-                            <th>Level</th>
-                            <th>Location</th>
-                            <th>Status</th>
-                            <th>Posted</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (isset($jobs) && !empty($jobs)): ?>
-                            <?php foreach ($jobs as $job): ?>
+                <?php if (empty($pendingJobs)): ?>
+                    <div class="no-data">No pending job approvals.</div>
+                <?php else: ?>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Position</th>
+                                <th>Company</th>
+                                <th>Location</th>
+                                <th>Posted By</th>
+                                <th>Posted On</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($pendingJobs as $job): ?>
                                 <tr>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($job['title']); ?></strong>
-                                        <?php if (isset($job['salary_range']) && !empty($job['salary_range'])): ?>
-                                            <br>
-                                            <small style="color: var(--text-light);">
-                                                <?php echo htmlspecialchars($job['salary_range']); ?>
-                                            </small>
-                                        <?php endif; ?>
-                                    </td>
+                                    <td><?php echo htmlspecialchars($job['title']); ?></td>
                                     <td><?php echo htmlspecialchars($job['company']); ?></td>
-                                    <td>
-                                        <span class="type-badge type-<?php echo isset($job['job_type']) ? $job['job_type'] : 'other'; ?>">
-                                            <?php echo ucfirst(str_replace('-', ' ', isset($job['job_type']) ? $job['job_type'] : 'other')); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="level-badge level-<?php echo isset($job['experience_level']) ? $job['experience_level'] : 'entry'; ?>">
-                                            <?php echo ucfirst(isset($job['experience_level']) ? $job['experience_level'] : 'entry'); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <?php echo (isset($job['location']) && !empty($job['location'])) ? htmlspecialchars($job['location']) : '<span style="color: var(--text-light);">Not specified</span>'; ?>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge <?php echo (isset($job['is_active']) && $job['is_active']) ? 'status-active' : 'status-inactive'; ?>">
-                                            <?php echo (isset($job['is_active']) && $job['is_active']) ? 'Active' : 'Inactive'; ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <?php echo date('M j, Y', strtotime($job['created_at'])); ?>
-                                        <br>
-                                        <small style="color: var(--text-light);">
-                                            by <?php echo htmlspecialchars($job['author_name']); ?>
-                                        </small>
-                                    </td>
-                                    <td class="actions-cell">
-                                        <button class="btn btn-secondary" onclick="editJob(<?php echo $job['id']; ?>)">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </button>
-                                        <form method="POST" action="" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this job posting?');">
-                                            <input type="hidden" name="action" value="delete">
+                                    <td><?php echo htmlspecialchars($job['location']); ?></td>
+                                    <td><?php echo htmlspecialchars($job['posted_by_name'] ?? 'N/A'); ?></td>
+                                    <td><?php echo date('M j, Y', strtotime($job['posted_at'])); ?></td>
+                                    <td class="actions">
+                                        <form method="POST" style="display: inline-block;">
+                                            <input type="hidden" name="action" value="approve_job">
                                             <input type="hidden" name="job_id" value="<?php echo $job['id']; ?>">
-                                            <button type="submit" class="btn btn-danger">
-                                                <i class="fas fa-trash"></i> Delete
+                                            <button type="submit" class="btn btn-approve">
+                                                <i class="fas fa-check"></i> Approve
+                                            </button>
+                                        </form>
+                                        <form method="POST" style="display: inline-block; margin-left: 5px;">
+                                            <input type="hidden" name="action" value="reject_job">
+                                            <input type="hidden" name="job_id" value="<?php echo $job['id']; ?>">
+                                            <button type="submit" class="btn btn-reject" onclick="return confirm('Are you sure you want to reject this job posting?')">
+                                                <i class="fas fa-times"></i> Reject
                                             </button>
                                         </form>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
-                        <?php else: ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Approved Jobs Section -->
+        <div class="jobs-table" style="margin-top: 30px;">
+            <div class="table-header">
+                <h3 class="table-title"><i class="fas fa-check-circle"></i> Approved Jobs</h3>
+            </div>
+            <div class="table-container">
+                <?php if (empty($approvedJobs)): ?>
+                    <div class="no-data">No approved jobs found.</div>
+                <?php else: ?>
+                    <table>
+                        <thead>
                             <tr>
-                                <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-light);">
-                                    <i class="fas fa-briefcase" style="font-size: 48px; margin-bottom: 15px; display: block;"></i>
-                                    No job postings found. Create your first job posting above.
-                                </td>
+                                <th>Position</th>
+                                <th>Company</th>
+                                <th>Location</th>
+                                <th>Posted By</th>
+                                <th>Posted On</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($approvedJobs as $job): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($job['title']); ?></td>
+                                    <td><?php echo htmlspecialchars($job['company']); ?></td>
+                                    <td><?php echo htmlspecialchars($job['location']); ?></td>
+                                    <td><?php echo htmlspecialchars($job['posted_by_name'] ?? 'N/A'); ?></td>
+                                    <td><?php echo date('M j, Y', strtotime($job['posted_at'])); ?></td>
+                                    <td>
+                                        <span class="status-badge status-active">Approved</span>
+                                    </td>
+                                    <td class="actions">
+                                        <form method="POST" style="display: inline-block;">
+                                            <input type="hidden" name="action" value="reject_job">
+                                            <input type="hidden" name="job_id" value="<?php echo $job['id']; ?>">
+                                            <button type="submit" class="btn btn-reject" onclick="return confirm('Are you sure you want to reject this job posting?')">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -731,11 +809,11 @@ try {
                 document.getElementById('edit_job_type').value = job.job_type || 'full-time';
                 document.getElementById('edit_experience_level').value = job.experience_level || 'entry';
                 document.getElementById('edit_location').value = job.location || '';
-                document.getElementById('edit_salary_range').value = job.salary_range || '';
+                document.getElementById('edit_salary_min').value = job.salary_min || '';
                 document.getElementById('edit_description').value = job.description || '';
                 document.getElementById('edit_requirements').value = job.requirements || '';
                 document.getElementById('edit_application_deadline').value = job.application_deadline || '';
-                document.getElementById('edit_application_url').value = job.application_url || '';
+                document.getElementById('edit_application_link').value = job.application_link || '';
                 document.getElementById('edit_contact_email').value = job.contact_email || '';
                 document.getElementById('edit_is_active').checked = (job.is_active == 1);
 

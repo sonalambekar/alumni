@@ -19,16 +19,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Add new gallery
             $title = $_POST['title'] ?? '';
             $description = $_POST['description'] ?? '';
-            $event_date = !empty($_POST['event_date']) ? $_POST['event_date'] : null;
-            $location = $_POST['location'] ?? '';
+            $cover_image = '';
+
+            // Handle file upload
+            if (isset($_FILES['cover_image']) && $_FILES['cover_image']['error'] === UPLOAD_ERR_OK) {
+                $upload_dir = '../attachments/galleries/';
+                if (!file_exists($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+                
+                $file_extension = pathinfo($_FILES['cover_image']['name'], PATHINFO_EXTENSION);
+                $filename = uniqid('gallery_') . '.' . $file_extension;
+                $target_path = $upload_dir . $filename;
+                
+                if (move_uploaded_file($_FILES['cover_image']['tmp_name'], $target_path)) {
+                    $cover_image = 'attachments/galleries/' . $filename;
+                } else {
+                    $error = "Error uploading cover image";
+                }
+            }
 
             if (!empty($title)) {
                 try {
                     $stmt = $pdo->prepare("
-                        INSERT INTO galleries (title, description, event_date, location, author_id)
-                        VALUES (?, ?, ?, ?, ?)
+                        INSERT INTO galleries (name, description, cover_image, created_by, is_active)
+                        VALUES (?, ?, ?, ?, 1)
                     ");
-                    $stmt->execute([$title, $description, $event_date, $location, $_SESSION['user_id']]);
+                    $stmt->execute([
+                        $title, 
+                        $description, 
+                        $cover_image,
+                        $_SESSION['user_id']
+                    ]);
 
                     $success = "Gallery created successfully!";
                 } catch(PDOException $e) {
@@ -42,18 +64,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = $_POST['gallery_id'] ?? 0;
             $title = $_POST['title'] ?? '';
             $description = $_POST['description'] ?? '';
-            $event_date = !empty($_POST['event_date']) ? $_POST['event_date'] : null;
-            $location = $_POST['location'] ?? '';
             $is_active = isset($_POST['is_active']) ? 1 : 0;
+            $current_cover = $_POST['current_cover'] ?? '';
+            $cover_image = $current_cover;
+
+            // Handle file upload if a new file is provided
+            if (isset($_FILES['cover_image']) && $_FILES['cover_image']['error'] === UPLOAD_ERR_OK) {
+                $upload_dir = '../attachments/galleries/';
+                if (!file_exists($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+                
+                // Delete old cover image if it exists
+                if (!empty($current_cover) && file_exists('../' . $current_cover)) {
+                    @unlink('../' . $current_cover);
+                }
+                
+                $file_extension = pathinfo($_FILES['cover_image']['name'], PATHINFO_EXTENSION);
+                $filename = uniqid('gallery_') . '.' . $file_extension;
+                $target_path = $upload_dir . $filename;
+                
+                if (move_uploaded_file($_FILES['cover_image']['tmp_name'], $target_path)) {
+                    $cover_image = 'attachments/galleries/' . $filename;
+                } else {
+                    $error = "Error uploading cover image";
+                }
+            }
 
             if (!empty($title) && !empty($id)) {
                 try {
                     $stmt = $pdo->prepare("
                         UPDATE galleries
-                        SET title = ?, description = ?, event_date = ?, location = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+                        SET name = ?, 
+                            description = ?, 
+                            cover_image = ?,
+                            is_active = ?, 
+                            updated_at = CURRENT_TIMESTAMP
                         WHERE id = ?
                     ");
-                    $stmt->execute([$title, $description, $event_date, $location, $is_active, $id]);
+                    $stmt->execute([
+                        $title, 
+                        $description, 
+                        $cover_image,
+                        $is_active, 
+                        $id
+                    ]);
 
                     $success = "Gallery updated successfully!";
                 } catch(PDOException $e) {
@@ -68,7 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!empty($id)) {
                 try {
-                    $stmt = $pdo->delete("DELETE FROM galleries WHERE id = ?", [$id]);
+                    $stmt = $pdo->prepare("DELETE FROM galleries WHERE id = ?");
+                    $stmt->execute([$id]);
                     $success = "Gallery deleted successfully!";
                 } catch(PDOException $e) {
                     $error = "Error deleting gallery: " . $e->getMessage();
@@ -129,7 +185,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!empty($id)) {
                 try {
-                    $stmt = $pdo->delete("DELETE FROM photos WHERE id = ?", [$id]);
+                    $stmt = $pdo->prepare("DELETE FROM photos WHERE id = ?");
+                    $stmt->execute([$id]);
                     $success = "Photo deleted successfully!";
                 } catch(PDOException $e) {
                     $error = "Error deleting photo: " . $e->getMessage();
@@ -159,13 +216,11 @@ try {
 
     if ($tablesExist) {
         try {
-            // Try to get author name, fallback to author_id if full_name doesn't exist
+            // Get galleries with photo count
             $stmt = $pdo->query("
-                SELECT g.*,
-                       COALESCE(u.full_name, u.name, CONCAT('User #', g.author_id)) as author_name,
+                SELECT g.id, g.name, g.description, g.is_active, g.created_at, g.updated_at, g.cover_image,
                        COUNT(p.id) as photo_count
                 FROM galleries g
-                LEFT JOIN users u ON g.author_id = u.id
                 LEFT JOIN photos p ON g.id = p.gallery_id
                 GROUP BY g.id
                 ORDER BY g.created_at DESC
@@ -174,18 +229,17 @@ try {
 
             // Get all photos for modal
             $stmt = $pdo->query("
-                SELECT p.*, g.title as gallery_title
+                SELECT p.*, g.name as gallery_name
                 FROM photos p
                 LEFT JOIN galleries g ON p.gallery_id = g.id
-                ORDER BY p.gallery_id, p.sort_order, p.upload_date DESC
+                ORDER BY p.gallery_id, p.upload_date DESC
             ");
             $photos = $stmt->fetchAll();
 
         } catch(PDOException $e) {
-            // If the join fails, try without the author name
+            // Get galleries with photo count (simplified query)
             $stmt = $pdo->query("
-                SELECT g.*,
-                       CONCAT('User #', g.author_id) as author_name,
+                SELECT g.id, g.name, g.description, g.is_active, g.created_at, g.updated_at, g.cover_image,
                        COUNT(p.id) as photo_count
                 FROM galleries g
                 LEFT JOIN photos p ON g.id = p.gallery_id
@@ -196,10 +250,10 @@ try {
 
             // Get all photos for modal (simplified query)
             $stmt = $pdo->query("
-                SELECT p.*, g.title as gallery_title
+                SELECT p.*, g.name as gallery_name
                 FROM photos p
                 LEFT JOIN galleries g ON p.gallery_id = g.id
-                ORDER BY p.gallery_id, p.sort_order, p.upload_date DESC
+                ORDER BY p.gallery_id, p.upload_date DESC
             ");
             $photos = $stmt->fetchAll();
         }
@@ -218,156 +272,211 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Photo Galleries - Admin Dashboard</title>
     <link rel="stylesheet" href="../assets/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #5b1f1f;
-            --secondary-color: #ecc35c;
-            --bg-light: #f5f7fb;
-            --text-color: #333;
-            --text-light: #6b7280;
-            --border-color: #e5e7eb;
-            --white: #ffffff;
-            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05);
-            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-            --border-radius: 8px;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #ec4899;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-hover: #f1f5f9;
+            
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-light);
-            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            color: #000000;
             line-height: 1.6;
-            margin: 0;
-            padding: 0;
         }
 
+        /* Header Styles */
         .admin-header {
-            background: var(--white);
-            border-bottom: 1px solid var(--border-color);
-            padding: 20px 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1.25rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
         }
 
         .admin-nav {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
+            padding: 0 2rem;
         }
 
         .admin-brand {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary-color);
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .admin-brand i {
+            -webkit-text-fill-color: var(--primary);
         }
 
         .back-btn {
-            background: var(--text-light);
-            color: var(--white);
+            background: var(--text-secondary);
+            color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: var(--border-radius);
-            font-size: 14px;
+            padding: 0.625rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s ease;
+            transition: all 0.3s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.5rem;
         }
 
         .back-btn:hover {
-            background: #4b5563;
+            background: var(--text-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
+        /* Container */
         .dashboard-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem 2rem;
         }
 
         .dashboard-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 2rem;
         }
 
         .dashboard-title {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--text-color);
+            font-size: 2rem;
+            font-weight: 800;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .add-btn {
-            background: var(--primary-color);
-            color: var(--white);
-            border: none;
-            padding: 12px 24px;
-            border-radius: var(--border-radius);
-            font-size: 14px;
+        /* Alert Styles */
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius);
+            margin-bottom: 1.5rem;
             font-weight: 500;
-            cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
-            transition: background 0.3s ease;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
         }
 
-        .add-btn:hover {
-            background: #4a1919;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: var(--border-radius);
-            margin-bottom: 20px;
-            font-weight: 500;
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .alert-success {
             background: #d1fae5;
             color: #065f46;
-            border: 1px solid #a7f3d0;
+            border-left: 4px solid var(--success);
         }
 
         .alert-error {
             background: #fee2e2;
             color: #991b1b;
-            border: 1px solid #fca5a5;
+            border-left: 4px solid var(--danger);
         }
 
+        /* Form Container */
         .form-container {
-            background: var(--white);
-            border-radius: var(--border-radius);
-            padding: 30px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            margin-bottom: 30px;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-container:hover {
+            box-shadow: var(--shadow-xl);
         }
 
         .form-container h3 {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text-color);
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--primary-color);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 3px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .form-container h3 i {
+            color: var(--primary);
         }
 
         .form-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
         }
 
         .form-group.full-width {
@@ -376,25 +485,28 @@ try {
 
         .form-label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--text-color);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
         }
 
-        .form-input, .form-textarea, .form-select {
+        .form-input, .form-textarea, .form-select, input[type="file"] {
             width: 100%;
-            padding: 12px 16px;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius);
-            font-size: 14px;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.9375rem;
             font-family: inherit;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            transition: all 0.3s ease;
+            background: var(--bg-card);
+            color: var(--text-primary);
         }
 
         .form-input:focus, .form-textarea:focus, .form-select:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(91, 31, 31, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
         }
 
         .form-textarea {
@@ -402,224 +514,426 @@ try {
             min-height: 120px;
         }
 
-        .form-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
+        .form-text {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
         }
 
+        /* Buttons */
         .btn {
-            padding: 10px 20px;
+            padding: 0.625rem 1.25rem;
             border: none;
-            border-radius: var(--border-radius);
-            font-size: 14px;
-            font-weight: 500;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            gap: 0.5rem;
+            white-space: nowrap;
         }
 
         .btn-primary {
-            background: var(--primary-color);
-            color: var(--white);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow);
         }
 
         .btn-primary:hover {
-            background: #4a1919;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
         .btn-secondary {
-            background: var(--text-light);
-            color: var(--white);
+            background: var(--text-secondary);
+            color: white;
         }
 
         .btn-secondary:hover {
-            background: #4b5563;
+            background: var(--text-primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
         .btn-danger {
-            background: #dc2626;
-            color: var(--white);
+            background: var(--danger);
+            color: white;
         }
 
         .btn-danger:hover {
-            background: #b91c1c;
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        /* Galleries Grid */
         .galleries-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
 
         .gallery-card {
-            background: var(--white);
-            border-radius: var(--border-radius);
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
             overflow: hidden;
             box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            position: relative;
         }
 
         .gallery-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .gallery-cover {
+            width: 100%;
+            height: 220px;
+            overflow: hidden;
+            position: relative;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .gallery-cover::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.4) 100%);
+        }
+
+        .gallery-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-card:hover .gallery-cover img {
+            transform: scale(1.1);
         }
 
         .gallery-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem;
         }
 
         .gallery-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--text-color);
-            margin-bottom: 8px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
         }
 
         .gallery-meta {
-            font-size: 12px;
-            color: var(--text-light);
-            margin-bottom: 10px;
-        }
-
-        .gallery-description {
-            color: var(--text-color);
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .gallery-footer {
-            padding: 15px 20px;
-            background: var(--bg-light);
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
             display: flex;
-            justify-content: between;
             align-items: center;
+            gap: 0.5rem;
         }
 
-        .photo-count {
-            font-size: 12px;
-            color: var(--text-light);
-        }
-
-        .gallery-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
+        .gallery-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .status-active {
+        .gallery-status[data-status='1'] {
             background: #d1fae5;
             color: #065f46;
         }
 
-        .status-inactive {
+        .gallery-status[data-status='0'] {
             background: #fee2e2;
             color: #991b1b;
         }
 
+        .gallery-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        .gallery-footer {
+            padding: 1rem 1.5rem;
+            background: var(--bg-hover);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .photo-count {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .photo-count i {
+            color: var(--primary);
+        }
+
+        .gallery-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .gallery-actions .btn {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8125rem;
+        }
+
+        /* Photos Section */
         .photos-section {
-            background: var(--white);
-            border-radius: var(--border-radius);
-            padding: 25px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            margin-top: 30px;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            margin-top: 2rem;
         }
 
         .photos-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-light);
         }
 
         .photos-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text-color);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .photos-title i {
+            color: var(--primary);
         }
 
         .photos-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.25rem;
         }
 
         .photo-card {
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
             overflow: hidden;
-            background: var(--white);
+            background: var(--bg-card);
+            transition: all 0.3s ease;
+        }
+
+        .photo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
         }
 
         .photo-image {
             width: 100%;
-            height: 150px;
+            height: 180px;
             object-fit: cover;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border);
         }
 
         .photo-info {
-            padding: 12px;
+            padding: 1rem;
         }
 
         .photo-title {
-            font-weight: 500;
-            font-size: 14px;
-            color: var(--text-color);
-            margin-bottom: 4px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            color: var(--text-primary);
+            margin-bottom: 0.375rem;
         }
 
         .photo-caption {
-            font-size: 12px;
-            color: var(--text-light);
-            margin-bottom: 8px;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
         }
 
         .photo-actions {
             display: flex;
-            gap: 5px;
+            gap: 0.5rem;
+        }
+
+        .photo-actions .btn {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 0.8125rem;
         }
 
         .featured-badge {
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.25rem 0.625rem;
+            border-radius: 12px;
+            font-size: 0.6875rem;
+            font-weight: 700;
             text-transform: uppercase;
-            background: #fbbf24;
-            color: #92400e;
-            margin-bottom: 8px;
-            display: inline-block;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            overflow: auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            margin: 3% auto;
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            width: 90%;
+            max-width: 700px;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .close {
+            color: var(--text-muted);
+            float: right;
+            font-size: 2rem;
+            font-weight: 300;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 1.125rem;
+            font-weight: 500;
         }
 
         /* Responsive Design */
         @media (max-width: 768px) {
+            .admin-nav {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
             .form-row {
                 grid-template-columns: 1fr;
             }
 
             .form-actions {
                 flex-direction: column;
-            }
-
-            .dashboard-header {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
             }
 
             .galleries-grid {
@@ -629,6 +943,19 @@ try {
             .photos-grid {
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             }
+
+            .gallery-footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .gallery-actions {
+                width: 100%;
+            }
+
+            .gallery-actions .btn {
+                flex: 1;
+            }
         }
     </style>
 </head>
@@ -636,62 +963,79 @@ try {
     <!-- Admin Header -->
     <div class="admin-header">
         <div class="admin-nav">
-            <div class="admin-brand">Photo Galleries Management</div>
+            <div class="admin-brand">
+                <i class="fas fa-images"></i>
+                Photo Galleries
+            </div>
             <a href="admin_dashboard.php" class="back-btn">
-                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                <i class="fas fa-arrow-left"></i> Dashboard
             </a>
         </div>
     </div>
 
     <div class="dashboard-container">
-        <?php if (isset($success)): ?>
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Gallery Management</h1>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <?php if (!empty($success)): ?>
             <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
+                <i class="fas fa-check-circle"></i>
+                <?php echo htmlspecialchars($success); ?>
             </div>
         <?php endif; ?>
 
-        <?php if (isset($error)): ?>
+        <?php if (!empty($error)): ?>
             <div class="alert alert-error">
-                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+                <i class="fas fa-exclamation-circle"></i>
+                <?php echo htmlspecialchars($error); ?>
             </div>
         <?php endif; ?>
 
         <!-- Add Gallery Form -->
         <div class="form-container">
             <h3><i class="fas fa-plus-circle"></i> Create New Gallery</h3>
-            <form method="POST" action="">
+            <form method="POST" action="" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="add_gallery">
+                <input type="hidden" name="MAX_FILE_SIZE" value="5242880">
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="title">Gallery Title *</label>
-                        <input type="text" id="title" name="title" class="form-input" required>
+                        <label class="form-label" for="galleryTitle">Gallery Title *</label>
+                        <input type="text" id="galleryTitle" name="title" class="form-input" required placeholder="Enter gallery name">
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="event_date">Event Date</label>
-                        <input type="date" id="event_date" name="event_date" class="form-input">
+                        <label class="form-label" for="coverImage">Cover Image *</label>
+                        <input type="file" id="coverImage" name="cover_image" accept="image/*" required>
+                        <small class="form-text">Max 5MB. Formats: JPG, PNG, GIF</small>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
+                        <label class="form-label" for="event_date">Event Date</label>
+                        <input type="date" id="event_date" name="event_date" class="form-input">
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label" for="location">Location</label>
-                        <input type="text" id="location" name="location" class="form-input" placeholder="Event location or venue">
+                        <input type="text" id="location" name="location" class="form-input" placeholder="Event location">
                     </div>
                 </div>
 
                 <div class="form-group full-width">
                     <label class="form-label" for="description">Description</label>
-                    <textarea id="description" name="description" class="form-textarea" rows="3" placeholder="Describe the gallery and what photos it contains..."></textarea>
+                    <textarea id="description" name="description" class="form-textarea" placeholder="Describe the gallery..."></textarea>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Create Gallery
-                    </button>
                     <button type="reset" class="btn btn-secondary">
                         <i class="fas fa-undo"></i> Reset
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Create Gallery
                     </button>
                 </div>
             </form>
@@ -702,40 +1046,43 @@ try {
             <?php if (isset($galleries) && !empty($galleries)): ?>
                 <?php foreach ($galleries as $gallery): ?>
                     <div class="gallery-card">
-                        <div class="gallery-header">
-                            <div class="gallery-title"><?php echo htmlspecialchars($gallery['title']); ?></div>
-                            <div class="gallery-meta">
-                                by <?php echo htmlspecialchars($gallery['author_name']); ?> •
-                                <?php echo isset($gallery['photo_count']) ? $gallery['photo_count'] : 0; ?> photos
+                        <?php if (!empty($gallery['cover_image'])): ?>
+                            <div class="gallery-cover">
+                                <img src="../<?php echo htmlspecialchars($gallery['cover_image']); ?>" alt="<?php echo htmlspecialchars($gallery['name']); ?>">
                             </div>
-                            <?php if (isset($gallery['description']) && !empty($gallery['description'])): ?>
-                                <div class="gallery-description">
-                                    <?php echo htmlspecialchars(substr($gallery['description'], 0, 100)); ?>
-                                    <?php if (strlen($gallery['description']) > 100): ?>...<?php endif; ?>
-                                </div>
+                        <?php endif; ?>
+                        
+                        <div class="gallery-header">
+                            <h3 class="gallery-title"><?php echo htmlspecialchars($gallery['name']); ?></h3>
+                            <div class="gallery-meta">
+                                <span class="gallery-status" data-status="<?php echo $gallery['is_active']; ?>">
+                                    <?php echo $gallery['is_active'] ? 'Active' : 'Inactive'; ?>
+                                </span>
+                            </div>
+                            <?php if (!empty($gallery['description'])): ?>
+                                <p class="gallery-description">
+                                    <?php echo htmlspecialchars(substr($gallery['description'], 0, 120)); ?>
+                                    <?php if (strlen($gallery['description']) > 120): ?>...<?php endif; ?>
+                                </p>
                             <?php endif; ?>
                         </div>
+                        
                         <div class="gallery-footer">
                             <div class="photo-count">
-                                <?php echo isset($gallery['photo_count']) ? $gallery['photo_count'] : 0; ?> photos
-                                <?php if (isset($gallery['event_date']) && !empty($gallery['event_date'])): ?>
-                                    • <?php echo date('M j, Y', strtotime($gallery['event_date'])); ?>
-                                <?php endif; ?>
+                                <i class="fas fa-images"></i>
+                                <span><?php echo $gallery['photo_count']; ?> photos</span>
                             </div>
                             <div class="gallery-actions">
-                                <span class="status-badge <?php echo (isset($gallery['is_active']) && $gallery['is_active']) ? 'status-active' : 'status-inactive'; ?>">
-                                    <?php echo (isset($gallery['is_active']) && $gallery['is_active']) ? 'Active' : 'Inactive'; ?>
-                                </span>
-                                <button class="btn btn-secondary" onclick="managePhotos(<?php echo $gallery['id']; ?>)">
-                                    <i class="fas fa-images"></i> Manage
+                                <button class="btn btn-primary" onclick="managePhotos(<?php echo $gallery['id']; ?>)" title="Manage Photos">
+                                    <i class="fas fa-images"></i> Photos
                                 </button>
-                                <button class="btn btn-secondary" onclick="editGallery(<?php echo $gallery['id']; ?>)">
-                                    <i class="fas fa-edit"></i> Edit
+                                <button class="btn btn-secondary" onclick="editGallery(<?php echo $gallery['id']; ?>)" title="Edit Gallery">
+                                    <i class="fas fa-edit"></i>
                                 </button>
-                                <form method="POST" action="" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this gallery? All photos will be deleted too.');">
+                                <form method="POST" action="" style="display: inline;" onsubmit="return confirm('Delete this gallery and all its photos?');">
                                     <input type="hidden" name="action" value="delete_gallery">
                                     <input type="hidden" name="gallery_id" value="<?php echo $gallery['id']; ?>">
-                                    <button type="submit" class="btn btn-danger">
+                                    <button type="submit" class="btn btn-danger" title="Delete Gallery">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
@@ -744,26 +1091,27 @@ try {
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-light);">
-                    <i class="fas fa-images" style="font-size: 48px; margin-bottom: 15px; display: block;"></i>
-                    No galleries found. Create your first gallery above.
+                <div class="empty-state">
+                    <i class="fas fa-images"></i>
+                    <p>No galleries yet. Create your first gallery above!</p>
                 </div>
             <?php endif; ?>
         </div>
 
-        <!-- Photos Management Section (Hidden by default) -->
+        <!-- Photos Management Section -->
         <div class="photos-section" id="photosSection" style="display: none;">
             <div class="photos-header">
-                <h3 class="photos-title" id="photosGalleryTitle">Gallery Photos</h3>
-                <div>
-                    <button class="btn btn-primary" onclick="showAddPhotoForm()">
-                        <i class="fas fa-plus"></i> Add Photo
-                    </button>
-                </div>
+                <h3 class="photos-title" id="photosGalleryTitle">
+                    <i class="fas fa-image"></i>
+                    Gallery Photos
+                </h3>
+                <button class="btn btn-primary" onclick="showAddPhotoForm()">
+                    <i class="fas fa-plus"></i> Add Photo
+                </button>
             </div>
 
             <!-- Add Photo Form -->
-            <div class="form-container" id="addPhotoForm" style="display: none; margin-top: 20px; margin-bottom: 20px;">
+            <div class="form-container" id="addPhotoForm" style="display: none; margin-bottom: 1.5rem;">
                 <h3><i class="fas fa-plus-circle"></i> Add New Photo</h3>
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="add_photo">
@@ -772,7 +1120,7 @@ try {
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label" for="photo_title">Photo Title</label>
-                            <input type="text" id="photo_title" name="title" class="form-input">
+                            <input type="text" id="photo_title" name="title" class="form-input" placeholder="Photo title">
                         </div>
 
                         <div class="form-group">
@@ -783,35 +1131,98 @@ try {
 
                     <div class="form-group full-width">
                         <label class="form-label" for="photo_caption">Caption</label>
-                        <input type="text" id="photo_caption" name="caption" class="form-input" placeholder="Brief description of the photo...">
+                        <input type="text" id="photo_caption" name="caption" class="form-input" placeholder="Brief caption">
                     </div>
 
                     <div class="form-group full-width">
                         <label class="form-label" for="photo_description">Description</label>
-                        <textarea id="photo_description" name="description" class="form-textarea" rows="2" placeholder="Detailed description of the photo..."></textarea>
+                        <textarea id="photo_description" name="description" class="form-textarea" rows="2" placeholder="Detailed description"></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" id="photo_is_featured" name="is_featured"> Featured Photo
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="photo_is_featured" name="is_featured">
+                            <span>Featured Photo</span>
                         </label>
                     </div>
 
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Add Photo
-                        </button>
                         <button type="button" class="btn btn-secondary" onclick="hideAddPhotoForm()">
                             <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Add Photo
                         </button>
                     </div>
                 </form>
             </div>
 
             <!-- Photos Grid -->
-            <div class="photos-grid" id="photosGrid">
-                <!-- Photos will be populated here by JavaScript -->
-            </div>
+            <div class="photos-grid" id="photosGrid"></div>
+        </div>
+    </div>
+
+    <!-- Edit Gallery Modal -->
+    <div id="editGalleryModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('editGalleryModal').style.display='none'">&times;</span>
+            <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <i class="fas fa-edit" style="color: var(--primary);"></i>
+                Edit Gallery
+            </h3>
+            <form id="editGalleryForm" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="edit_gallery">
+                <input type="hidden" name="gallery_id" id="editGalleryId">
+                <input type="hidden" name="current_cover" id="currentCover">
+                <input type="hidden" name="MAX_FILE_SIZE" value="5242880">
+                
+                <div class="form-group">
+                    <label class="form-label" for="editGalleryTitle">Gallery Title *</label>
+                    <input type="text" id="editGalleryTitle" name="title" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="editDescription">Description</label>
+                    <textarea id="editDescription" name="description" class="form-textarea" rows="3"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="editEventDate">Event Date</label>
+                        <input type="date" id="editEventDate" name="event_date" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="editLocation">Location</label>
+                        <input type="text" id="editLocation" name="location" class="form-input">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Current Cover Image</label>
+                    <div id="editCoverPreview" style="margin-bottom: 1rem;"></div>
+                    
+                    <label class="form-label" for="editCoverImage">Change Cover Image</label>
+                    <input type="file" id="editCoverImage" name="cover_image" accept="image/*">
+                    <small class="form-text">Leave empty to keep current. Max 5MB.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="editIsActive" name="is_active" value="1" checked>
+                        <span>Active</span>
+                    </label>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('editGalleryModal').style.display='none'">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -824,14 +1235,13 @@ try {
             const gallery = galleries.find(g => g.id == galleryId);
 
             if (gallery) {
-                document.getElementById('photosGalleryTitle').textContent = gallery.title + ' - Photos';
+                document.getElementById('photosGalleryTitle').innerHTML = `<i class="fas fa-image"></i>${gallery.name} - Photos`;
                 document.getElementById('add_photo_gallery_id').value = galleryId;
                 document.getElementById('photosSection').style.display = 'block';
+                document.getElementById('photosSection').scrollIntoView({ behavior: 'smooth' });
 
-                // Filter and display photos for this gallery
                 const photos = <?php echo json_encode($photos); ?>;
                 const galleryPhotos = photos.filter(p => p.gallery_id == galleryId);
-
                 displayPhotos(galleryPhotos);
             }
         }
@@ -840,25 +1250,30 @@ try {
             const photosGrid = document.getElementById('photosGrid');
 
             if (photos.length === 0) {
-                photosGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-light);"><i class="fas fa-image" style="font-size: 48px; margin-bottom: 15px; display: block;"></i>No photos in this gallery yet. Add some photos above.</div>';
+                photosGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-image"></i>
+                        <p>No photos yet. Add some photos above!</p>
+                    </div>
+                `;
                 return;
             }
 
             photosGrid.innerHTML = photos.map(photo => `
                 <div class="photo-card">
-                    <img src="${photo.image_path}" alt="${photo.title || 'Photo'}" class="photo-image" onerror="this.src='https://via.placeholder.com/200x150?text=No+Image'">
+                    <img src="${photo.image_path}" alt="${photo.title || 'Photo'}" class="photo-image" onerror="this.src='https://via.placeholder.com/220x180?text=No+Image'">
                     <div class="photo-info">
-                        ${photo.is_featured ? '<span class="featured-badge">Featured</span>' : ''}
+                        ${photo.is_featured ? '<span class="featured-badge"><i class="fas fa-star"></i> Featured</span>' : ''}
                         <div class="photo-title">${photo.title || 'Untitled'}</div>
-                        <div class="photo-caption">${photo.caption || ''}</div>
+                        ${photo.caption ? `<div class="photo-caption">${photo.caption}</div>` : ''}
                         <div class="photo-actions">
-                            <button class="btn btn-secondary" onclick="editPhoto(${photo.id})" style="padding: 5px 10px; font-size: 12px;">
+                            <button class="btn btn-secondary" onclick="editPhoto(${photo.id})" title="Edit Photo">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <form method="POST" action="" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this photo?');">
+                            <form method="POST" action="" style="display: inline;" onsubmit="return confirm('Delete this photo?');">
                                 <input type="hidden" name="action" value="delete_photo">
                                 <input type="hidden" name="photo_id" value="${photo.id}">
-                                <button type="submit" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;">
+                                <button type="submit" class="btn btn-danger" title="Delete Photo">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>
@@ -877,45 +1292,50 @@ try {
         }
 
         function editGallery(galleryId) {
-            // Find the gallery data and populate the modal
-            const galleries = <?php echo json_encode($galleries); ?>;
-            const gallery = galleries.find(g => g.id == galleryId);
-
-            if (gallery) {
-                document.getElementById('edit_gallery_id').value = gallery.id;
-                document.getElementById('edit_title').value = gallery.title || '';
-                document.getElementById('edit_description').value = gallery.description || '';
-                document.getElementById('edit_event_date').value = gallery.event_date || '';
-                document.getElementById('edit_location').value = gallery.location || '';
-                document.getElementById('edit_is_active').checked = (gallery.is_active == 1);
-
-                document.getElementById('editModal').classList.add('show');
-            }
-        }
-
-        function closeEditModal() {
-            document.getElementById('editModal').classList.remove('show');
+            fetch(`get_gallery.php?id=${galleryId}`)
+                .then(response => response.json())
+                .then(gallery => {
+                    document.getElementById('editGalleryId').value = gallery.id;
+                    document.getElementById('editGalleryTitle').value = gallery.name;
+                    document.getElementById('editDescription').value = gallery.description || '';
+                    document.getElementById('editEventDate').value = gallery.event_date || '';
+                    document.getElementById('editLocation').value = gallery.location || '';
+                    document.getElementById('editIsActive').checked = gallery.is_active == 1;
+                    document.getElementById('currentCover').value = gallery.cover_image || '';
+                    
+                    const coverPreview = document.getElementById('editCoverPreview');
+                    if (gallery.cover_image) {
+                        coverPreview.innerHTML = `
+                            <img src="../${gallery.cover_image}" alt="Current cover" style="max-width: 100%; border-radius: var(--radius-sm); box-shadow: var(--shadow);">
+                        `;
+                    } else {
+                        coverPreview.innerHTML = '<div style="color: var(--text-muted); font-size: 0.875rem;">No cover image</div>';
+                    }
+                    
+                    document.getElementById('editGalleryModal').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading gallery data');
+                });
         }
 
         function editPhoto(photoId) {
-            // Find the photo data and populate the modal
             const photos = <?php echo json_encode($photos); ?>;
             const photo = photos.find(p => p.id == photoId);
 
             if (photo) {
-                document.getElementById('edit_photo_id').value = photo.id;
-                document.getElementById('edit_photo_title').value = photo.title || '';
-                document.getElementById('edit_photo_image_path').value = photo.image_path;
-                document.getElementById('edit_photo_caption').value = photo.caption || '';
-                document.getElementById('edit_photo_description').value = photo.description || '';
-                document.getElementById('edit_photo_is_featured').checked = (photo.is_featured == 1);
-
-                document.getElementById('editPhotoModal').classList.add('show');
+                // Create edit form dynamically or populate existing modal
+                alert('Photo editing feature - ID: ' + photoId);
             }
         }
 
-        function closeEditPhotoModal() {
-            document.getElementById('editPhotoModal').classList.remove('show');
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('editGalleryModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
         }
     </script>
 </body>
