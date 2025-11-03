@@ -22,39 +22,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $event_date = $_POST['event_date'] ?? '';
             $end_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
             $location = $_POST['location'] ?? '';
-            $venue = $_POST['venue'] ?? '';
-            $max_attendees = !empty($_POST['max_attendees']) ? $_POST['max_attendees'] : null;
-            $registration_deadline = !empty($_POST['registration_deadline']) ? $_POST['registration_deadline'] : null;
             $event_type = $_POST['event_type'] ?? 'other';
-            $featured_image = $_POST['featured_image'] ?? '';
             $is_active = isset($_POST['is_active']) ? 1 : 0;
 
             if (!empty($title) && !empty($description) && !empty($event_date)) {
                 try {
-                    // Check if author_id column exists in events table
+                    // Check if organizer_id column exists in events table
                     $columns = $pdo->query("DESCRIBE events")->fetchAll(PDO::FETCH_ASSOC);
-                    $hasAuthorId = false;
+                    $hasOrganizerId = false;
                     foreach ($columns as $column) {
-                        if ($column['Field'] === 'author_id') {
-                            $hasAuthorId = true;
+                        if ($column['Field'] === 'organizer_id') {
+                            $hasOrganizerId = true;
                             break;
                         }
                     }
 
-                    if ($hasAuthorId) {
-                        // Insert with author_id
+                    if ($hasOrganizerId) {
+                        // Insert with organizer_id
                         $stmt = $pdo->prepare("
-                            INSERT INTO events (title, description, event_date, end_date, location, venue, max_attendees, registration_deadline, event_type, featured_image, author_id, is_active)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO events (title, description, event_date, end_date, location, event_type, organizer_id, is_active)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         ");
-                        $stmt->execute([$title, $description, $event_date, $end_date, $location, $venue, $max_attendees, $registration_deadline, $event_type, $featured_image, $_SESSION['user_id'], $is_active]);
+                        $stmt->execute([$title, $description, $event_date, $end_date, $location, $event_type, $_SESSION['user_id'], $is_active]);
                     } else {
-                        // Insert without author_id
+                        // Insert without organizer_id
                         $stmt = $pdo->prepare("
-                            INSERT INTO events (title, description, event_date, end_date, location, venue, max_attendees, registration_deadline, event_type, featured_image, is_active)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO events (title, description, event_date, end_date, location, event_type, is_active)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
                         ");
-                        $stmt->execute([$title, $description, $event_date, $end_date, $location, $venue, $max_attendees, $registration_deadline, $event_type, $featured_image, $is_active]);
+                        $stmt->execute([$title, $description, $event_date, $end_date, $location, $event_type, $is_active]);
                     }
 
                     $success = "Event added successfully!";
@@ -72,41 +68,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $event_date = $_POST['event_date'] ?? '';
             $end_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
             $location = $_POST['location'] ?? '';
-            $venue = $_POST['venue'] ?? '';
-            $max_attendees = !empty($_POST['max_attendees']) ? $_POST['max_attendees'] : null;
-            $registration_deadline = !empty($_POST['registration_deadline']) ? $_POST['registration_deadline'] : null;
             $event_type = $_POST['event_type'] ?? 'other';
-            $featured_image = $_POST['featured_image'] ?? '';
             $is_active = isset($_POST['is_active']) ? 1 : 0;
 
             if (!empty($title) && !empty($description) && !empty($event_date) && !empty($id)) {
                 try {
-                    // Check if author_id column exists in events table
+                    // Check if organizer_id column exists in events table
                     $columns = $pdo->query("DESCRIBE events")->fetchAll(PDO::FETCH_ASSOC);
-                    $hasAuthorId = false;
+                    $hasOrganizerId = false;
                     foreach ($columns as $column) {
-                        if ($column['Field'] === 'author_id') {
-                            $hasAuthorId = true;
+                        if ($column['Field'] === 'organizer_id') {
+                            $hasOrganizerId = true;
                             break;
                         }
                     }
 
-                    if ($hasAuthorId) {
-                        // Update with author_id
+                    if ($hasOrganizerId) {
+                        // Update with organizer_id
                         $stmt = $pdo->prepare("
                             UPDATE events
-                            SET title = ?, description = ?, event_date = ?, end_date = ?, location = ?, venue = ?, max_attendees = ?, registration_deadline = ?, event_type = ?, featured_image = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+                            SET title = ?, description = ?, event_date = ?, end_date = ?, location = ?, event_type = ?, is_active = ?, organizer_id = ?
                             WHERE id = ?
                         ");
-                        $stmt->execute([$title, $description, $event_date, $end_date, $location, $venue, $max_attendees, $registration_deadline, $event_type, $featured_image, $is_active, $id]);
+                        $stmt->execute([$title, $description, $event_date, $end_date, $location, $event_type, $is_active, $_SESSION['user_id'], $id]);
                     } else {
-                        // Update without author_id
+                        // Update without organizer_id
                         $stmt = $pdo->prepare("
                             UPDATE events
-                            SET title = ?, description = ?, event_date = ?, end_date = ?, location = ?, venue = ?, max_attendees = ?, registration_deadline = ?, event_type = ?, featured_image = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+                            SET title = ?, description = ?, event_date = ?, end_date = ?, location = ?, event_type = ?, is_active = ?
                             WHERE id = ?
                         ");
-                        $stmt->execute([$title, $description, $event_date, $end_date, $location, $venue, $max_attendees, $registration_deadline, $event_type, $featured_image, $is_active, $id]);
+                        $stmt->execute([$title, $description, $event_date, $end_date, $location, $event_type, $is_active, $id]);
                     }
 
                     $success = "Event updated successfully!";
@@ -150,34 +142,34 @@ try {
 
     if ($tablesExist) {
         try {
-            // First check if author_id column exists in events table
+            // First check if organizer_id column exists in events table
             $columns = $pdo->query("DESCRIBE events")->fetchAll(PDO::FETCH_ASSOC);
-            $hasAuthorId = false;
+            $hasOrganizerId = false;
             foreach ($columns as $column) {
-                if ($column['Field'] === 'author_id') {
-                    $hasAuthorId = true;
+                if ($column['Field'] === 'organizer_id') {
+                    $hasOrganizerId = true;
                     break;
                 }
             }
 
-            if ($hasAuthorId) {
-                // Try to get author name, fallback to author_id if full_name doesn't exist
+            if ($hasOrganizerId) {
+                // Try to get organizer name, fallback to user ID if name doesn't exist
                 $stmt = $pdo->query("
                     SELECT e.*,
-                           COALESCE(u.full_name, u.name, CONCAT('User #', e.author_id)) as author_name,
+                           COALESCE(u.full_name, u.name, CONCAT('User #', e.organizer_id)) as organizer_name,
                            COALESCE(COUNT(er.id), 0) as current_attendees
                     FROM events e
-                    LEFT JOIN users u ON e.author_id = u.id
+                    LEFT JOIN users u ON e.organizer_id = u.id
                     LEFT JOIN event_registrations er ON e.id = er.event_id AND er.attendance_status != 'cancelled'
                     GROUP BY e.id
                     ORDER BY e.event_date DESC
                 ");
                 $events = $stmt->fetchAll();
             } else {
-                // Events table doesn't have author_id column, query without it
+                // Events table doesn't have organizer_id column, query without it
                 $stmt = $pdo->query("
                     SELECT e.*,
-                           CONCAT('System Event') as author_name,
+                           CONCAT('System Event') as organizer_name,
                            COALESCE(COUNT(er.id), 0) as current_attendees
                     FROM events e
                     LEFT JOIN event_registrations er ON e.id = er.event_id AND er.attendance_status != 'cancelled'
@@ -582,17 +574,6 @@ try {
     </div>
 
     <div class="dashboard-container">
-        <?php if (isset($success)): ?>
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($error)): ?>
-            <div class="alert alert-error">
-                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
 
         <!-- Add Event Form -->
         <div class="form-container">
@@ -641,28 +622,6 @@ try {
                         <label class="form-label" for="location">Location</label>
                         <input type="text" id="location" name="location" class="form-input" placeholder="City, State/Country">
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="venue">Venue</label>
-                        <input type="text" id="venue" name="venue" class="form-input" placeholder="Specific venue name">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" for="max_attendees">Max Attendees (Optional)</label>
-                        <input type="number" id="max_attendees" name="max_attendees" class="form-input" min="1">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="registration_deadline">Registration Deadline (Optional)</label>
-                        <input type="datetime-local" id="registration_deadline" name="registration_deadline" class="form-input">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="featured_image">Featured Image URL</label>
-                    <input type="url" id="featured_image" name="featured_image" class="form-input" placeholder="https://example.com/image.jpg">
                 </div>
 
                 <div class="form-group">
@@ -723,25 +682,8 @@ try {
                                             <?php echo date('g:i A', strtotime($event['event_date'])); ?>
                                         </small>
                                     </td>
-                                    <td>
-                                        <?php if (isset($event['location']) && !empty($event['location'])): ?>
-                                            <?php echo htmlspecialchars($event['location']); ?>
-                                            <?php if (isset($event['venue']) && !empty($event['venue'])): ?>
-                                                <br>
-                                                <small style="color: var(--text-light);">
-                                                    <?php echo htmlspecialchars($event['venue']); ?>
-                                                </small>
-                                            <?php endif; ?>
-                                        <?php else: ?>
-                                            <span style="color: var(--text-light);">TBD</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <strong><?php echo isset($event['current_attendees']) ? $event['current_attendees'] : 0; ?></strong>
-                                        <?php if (isset($event['max_attendees']) && !empty($event['max_attendees'])): ?>
-                                            <span class="attendees-info">/ <?php echo $event['max_attendees']; ?> max</span>
-                                        <?php endif; ?>
-                                    </td>
+                                    <td><?php echo isset($event['current_attendees']) ? $event['current_attendees'] : 0; ?></td>
+                                    <td><?php echo isset($event['organizer_name']) ? htmlspecialchars($event['organizer_name']) : 'System'; ?></td>
                                     <td>
                                         <span class="status-badge <?php echo (isset($event['is_active']) && $event['is_active']) ? 'status-active' : 'status-inactive'; ?>">
                                             <?php echo (isset($event['is_active']) && $event['is_active']) ? 'Active' : 'Inactive'; ?>
@@ -789,10 +731,6 @@ try {
                 document.getElementById('edit_event_date').value = event.event_date ? event.event_date.slice(0, 16) : '';
                 document.getElementById('edit_end_date').value = event.end_date ? event.end_date.slice(0, 16) : '';
                 document.getElementById('edit_location').value = event.location || '';
-                document.getElementById('edit_venue').value = event.venue || '';
-                document.getElementById('edit_max_attendees').value = event.max_attendees || '';
-                document.getElementById('edit_registration_deadline').value = event.registration_deadline ? event.registration_deadline.slice(0, 16) : '';
-                document.getElementById('edit_featured_image').value = event.featured_image || '';
                 document.getElementById('edit_is_active').checked = (event.is_active == 1);
 
                 document.getElementById('editModal').classList.add('show');
@@ -856,28 +794,6 @@ try {
                         <label class="form-label" for="edit_location">Location</label>
                         <input type="text" id="edit_location" name="location" class="form-input" placeholder="City, State/Country">
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="edit_venue">Venue</label>
-                        <input type="text" id="edit_venue" name="venue" class="form-input" placeholder="Specific venue name">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" for="edit_max_attendees">Max Attendees (Optional)</label>
-                        <input type="number" id="edit_max_attendees" name="max_attendees" class="form-input" min="1">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="edit_registration_deadline">Registration Deadline (Optional)</label>
-                        <input type="datetime-local" id="edit_registration_deadline" name="registration_deadline" class="form-input">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="edit_featured_image">Featured Image URL</label>
-                    <input type="url" id="edit_featured_image" name="featured_image" class="form-input" placeholder="https://example.com/image.jpg">
                 </div>
 
                 <div class="form-group">

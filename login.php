@@ -22,11 +22,21 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                 $_SESSION['role'] = 'admin';
             }
 
-            // Redirect directors to admin dashboard
-            if ($currentUser['is_director'] == 1) {
+            // Check for redirect URL
+            if (isset($_SESSION['redirect_url'])) {
+                $redirect_url = $_SESSION['redirect_url'];
+                unset($_SESSION['redirect_url']);
+                header("Location: $redirect_url");
+            } 
+            // Redirect directors to admin dashboard if no specific redirect
+            else if ($currentUser['is_director'] == 1) {
                 header("Location: /alumni/admin/admin_dashboard.php");
-                exit();
+            } 
+            // Redirect regular users to the home page
+            else {
+                header("Location: /alumni/index.php");
             }
+            exit();
         } else {
             // User not found or inactive, clear session
             session_unset();
@@ -89,8 +99,8 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Alumni Connect</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Login - GM Alumni Network</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -98,10 +108,10 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
             --secondary-color: #ecc35c;
             --bg-light: #f5f7fb;
             --text-color: #333;
-            --text-light: #6b7280;
+            --text-light: #8b7070;
             --border-color: #e5e7eb;
             --white: #ffffff;
-            --border-radius: 8px;
+            --border-radius: 16px;
         }
 
         * {
@@ -112,7 +122,7 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--primary-color) 0%, #7a2a2a 100%);
+            background: linear-gradient(135deg, #e8d5d5 0%, #f0e6e6 50%, #e3d7d7 100%);
             color: var(--text-color);
             line-height: 1.6;
             min-height: 100vh;
@@ -120,228 +130,267 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Decorative elements */
+        body::before {
+            content: '🎓';
+            position: absolute;
+            top: 10%;
+            right: 15%;
+            font-size: 50px;
+            opacity: 0.3;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        body::after {
+            content: '⭐';
+            position: absolute;
+            bottom: 15%;
+            right: 10%;
+            font-size: 60px;
+            opacity: 0.3;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        .decorative-butterfly {
+            position: absolute;
+            font-size: 40px;
+            opacity: 0.3;
+            animation: float 7s ease-in-out infinite;
+        }
+
+        .butterfly-1 {
+            content: '🦋';
+            bottom: 25%;
+            left: 15%;
+            animation-delay: 1s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(5deg);
+            }
+        }
+
+        .login-wrapper {
+            display: flex;
+            max-width: 1100px;
+            width: 100%;
+            gap: 40px;
+            align-items: center;
         }
 
         .login-container {
-            background: var(--white);
+            background: var(--primary-color);
             border-radius: var(--border-radius);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 20px 60px rgba(91, 31, 31, 0.3);
             overflow: hidden;
             width: 100%;
-            max-width: 380px;
+            max-width: 450px;
+            position: relative;
         }
 
         .login-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, #7a2a2a 100%);
+            background: var(--primary-color);
             color: white;
-            padding: 50px 30px;
-            text-align: center;
+            padding: 50px 40px 40px;
+            text-align: left;
         }
 
         .login-header h1 {
-            margin: 0 0 10px 0;
-            font-size: 32px;
+            margin: 0 0 12px 0;
+            font-size: 36px;
             font-weight: 700;
             letter-spacing: -0.025em;
         }
 
         .login-header p {
             margin: 0;
-            opacity: 0.9;
-            font-size: 16px;
+            opacity: 0.85;
+            font-size: 15px;
             font-weight: 400;
+            color: rgba(255, 255, 255, 0.8);
         }
 
         .login-form {
-            padding: 40px 30px;
+            padding: 40px;
+            background: var(--primary-color);
         }
 
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             font-weight: 500;
-            color: var(--text-color);
+            color: white;
             font-size: 14px;
+            letter-spacing: 0.3px;
         }
 
         .form-group input[type="text"],
         .form-group input[type="password"] {
             width: 100%;
-            padding: 14px 16px;
-            border: 2px solid #e1e5e9;
-            border-radius: var(--border-radius);
+            padding: 16px 18px;
+            border: none;
+            border-radius: 12px;
             font-family: 'Inter', sans-serif;
-            font-size: 16px;
-            transition: all 0.2s ease;
-            background-color: #fafbfc;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.95);
+            color: var(--text-color);
+        }
+
+        .form-group input::placeholder {
+            color: #aaa;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: var(--primary-color);
-            background-color: var(--white);
-            box-shadow: 0 0 0 3px rgba(91, 31, 31, 0.1);
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
         }
 
         .error-message {
             background-color: #fef2f2;
             color: #dc2626;
-            padding: 12px 16px;
-            border-radius: var(--border-radius);
+            padding: 14px 18px;
+            border-radius: 12px;
             margin-bottom: 24px;
             font-size: 14px;
             border: 1px solid #fecaca;
             text-align: center;
+            font-weight: 500;
         }
 
         .success-message {
             background-color: #f0fdf4;
             color: #16a34a;
-            padding: 12px 16px;
-            border-radius: var(--border-radius);
+            padding: 14px 18px;
+            border-radius: 12px;
             margin-bottom: 24px;
             font-size: 14px;
             border: 1px solid #bbf7d0;
             text-align: center;
-        }
-
-        .form-options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-            font-size: 14px;
-        }
-
-        .remember-me {
-            display: flex;
-            align-items: center;
-            color: var(--text-light);
-            cursor: pointer;
-        }
-
-        .remember-me input[type="checkbox"] {
-            margin-right: 8px;
-            accent-color: var(--primary-color);
-        }
-
-        .forgot-password {
-            color: var(--primary-color);
-            text-decoration: none;
             font-weight: 500;
-            transition: color 0.2s ease;
-        }
-
-        .forgot-password:hover {
-            color: #4a1919;
-            text-decoration: underline;
         }
 
         .login-btn {
             width: 100%;
-            background-color: var(--primary-color);
+            background-color: rgba(255, 255, 255, 0.15);
             color: white;
-            border: none;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             padding: 16px 20px;
-            border-radius: var(--border-radius);
+            border-radius: 12px;
             cursor: pointer;
             font-weight: 600;
             font-size: 16px;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .login-btn:hover {
-            background-color: #4a1919;
-            transform: translateY(-1px);
-            box-shadow: 0 10px 20px rgba(91, 31, 31, 0.3);
+            background-color: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
 
-        .divider {
-            text-align: center;
-            margin: 32px 0;
-            position: relative;
-            color: var(--text-light);
-            font-size: 14px;
-        }
-
-        .divider::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background-color: #e1e5e9;
-        }
-
-        .divider span {
-            background-color: var(--white);
-            padding: 0 16px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .social-login {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .social-btn {
-            flex: 1;
-            padding: 12px 16px;
-            border: 2px solid #e1e5e9;
-            border-radius: var(--border-radius);
-            background: var(--white);
-            color: var(--text-color);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
+        .back-link {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .social-btn:hover {
-            background-color: #f8fafc;
-            border-color: var(--text-light);
-            transform: translateY(-1px);
-        }
-
-        .signup-prompt {
-            text-align: center;
-            padding-top: 24px;
-            border-top: 1px solid #e1e5e9;
-        }
-
-        .signup-prompt p {
-            margin: 0 0 16px 0;
-            color: var(--text-light);
-            font-size: 14px;
-        }
-
-        .signup-link {
-            color: var(--primary-color);
+            color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s ease;
+            font-size: 14px;
+            padding: 12px;
+            transition: all 0.3s ease;
+            margin-top: 10px;
         }
 
-        .signup-link:hover {
-            color: #4a1919;
-            text-decoration: underline;
+        .back-link:hover {
+            color: white;
+            transform: translateX(-5px);
         }
 
-        .profile-section {
-            padding: 40px 30px;
+        /* Branding card */
+        .brand-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 50px 40px;
             text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            max-width: 450px;
+            width: 100%;
+            position: relative;
+        }
+
+        .brand-icon {
+            width: 120px;
+            height: 120px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            box-shadow: 0 8px 30px rgba(91, 31, 31, 0.2);
+        }
+
+        .brand-icon i {
+            font-size: 60px;
+            color: white;
+        }
+
+        .brand-card h2 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-card p {
+            color: var(--text-light);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .decorative-icon {
+            position: absolute;
+            opacity: 0.15;
+            font-size: 30px;
+        }
+
+        .icon-1 {
+            top: 20px;
+            right: 30px;
+        }
+
+        .icon-2 {
+            bottom: 30px;
+            left: 30px;
+        }
+
+        /* Profile section for logged-in users */
+        .profile-section {
+            padding: 40px;
+            text-align: center;
+            background: white;
         }
 
         .profile-header {
@@ -353,11 +402,12 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
         }
 
         .profile-avatar {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             overflow: hidden;
-            border: 3px solid var(--primary-color);
+            border: 4px solid var(--primary-color);
+            box-shadow: 0 8px 20px rgba(91, 31, 31, 0.2);
         }
 
         .profile-avatar img {
@@ -369,11 +419,12 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
         .profile-info h2 {
             margin: 0 0 8px 0;
             color: var(--text-color);
-            font-size: 24px;
+            font-size: 26px;
+            font-weight: 700;
         }
 
         .profile-info p {
-            margin: 4px 0;
+            margin: 6px 0;
             color: var(--text-light);
             font-size: 14px;
         }
@@ -383,10 +434,10 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 12px 24px;
+            padding: 14px 28px;
             border: none;
-            border-radius: var(--border-radius);
-            font-size: 14px;
+            border-radius: 12px;
+            font-size: 15px;
             font-weight: 600;
             text-decoration: none;
             cursor: pointer;
@@ -401,6 +452,7 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
         .btn-primary:hover {
             background: #4a1919;
             transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(91, 31, 31, 0.3);
         }
 
         .btn-secondary {
@@ -420,10 +472,20 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
             flex-wrap: wrap;
         }
 
+        @media (max-width: 992px) {
+            .login-wrapper {
+                flex-direction: column;
+            }
+
+            .brand-card {
+                order: -1;
+            }
+        }
+
         @media (max-width: 480px) {
             .login-container {
                 margin: 10px;
-                border-radius: 12px;
+                border-radius: 16px;
             }
 
             .login-header,
@@ -432,12 +494,25 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
                 padding: 32px 24px;
             }
 
-            .social-login {
-                flex-direction: column;
+            .login-header h1 {
+                font-size: 30px;
             }
 
-            .login-header h1 {
+            .brand-card {
+                padding: 40px 30px;
+            }
+
+            .brand-card h2 {
                 font-size: 28px;
+            }
+
+            .brand-icon {
+                width: 100px;
+                height: 100px;
+            }
+
+            .brand-icon i {
+                font-size: 50px;
             }
 
             .profile-actions {
@@ -452,100 +527,91 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>Welcome to Gems of GM</h1>
-            <p>Sign in to access your Alumni Connect account</p>
+    <div class="decorative-butterfly butterfly-1">🦋</div>
+
+    <div class="login-wrapper">
+        <!-- Login Form Section -->
+        <div class="login-container">
+            <div class="login-header">
+                <h1>Welcome Back</h1>
+                <p>Sign in to your GM Alumni account</p>
+            </div>
+
+            <?php if (!$isLoggedIn): ?>
+                <!-- Login Form -->
+                <form class="login-form" method="POST" action="">
+                    <?php if ($error): ?>
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <?php echo htmlspecialchars($error); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($success): ?>
+                        <div class="success-message">
+                            <i class="fas fa-check-circle"></i>
+                            <?php echo htmlspecialchars($success); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="form-group">
+                        <label for="usn">USN (University Seat Number)</label>
+                        <input type="text" id="usn" name="usn" placeholder="Enter your USN" required value="<?php echo htmlspecialchars($_POST['usn'] ?? ''); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    </div>
+
+                    <button type="submit" class="login-btn">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+
+                    <a href="/alumni/index.php" class="back-link">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
+                </form>
+            <?php else: ?>
+                <!-- User Profile Section -->
+                <div class="profile-section">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($currentUser['name']); ?>&background=5b1f1f&color=fff&size=200" alt="Profile" />
+                        </div>
+                        <div class="profile-info">
+                            <h2><?php echo htmlspecialchars($currentUser['name']); ?></h2>
+                            <p><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($currentUser['email_id']); ?></p>
+                            <p><i class="fas fa-id-card"></i> <strong>USN:</strong> <?php echo htmlspecialchars($currentUser['usn']); ?></p>
+                            <?php if (!empty($currentUser['designation'])): ?>
+                                <p><i class="fas fa-briefcase"></i> <strong>Role:</strong> <?php echo htmlspecialchars($currentUser['designation']); ?></p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="profile-actions">
+                        <a href="/alumni/index.php" class="btn btn-primary">
+                            <i class="fas fa-home"></i> Go to Dashboard
+                        </a>
+                        <a href="/alumni/logout.php" class="btn btn-secondary">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
 
-        <?php if ($error): ?>
-            <div class="login-form">
-                <div class="error-message">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <?php echo htmlspecialchars($error); ?>
-                </div>
+        <!-- Branding Card -->
+        <div class="brand-card">
+            <div class="decorative-icon icon-1">🎓</div>
+            <div class="decorative-icon icon-2">🦋</div>
+            
+            <div class="brand-icon">
+                <i class="fas fa-university"></i>
             </div>
-        <?php endif; ?>
-
-        <?php if ($success): ?>
-            <div class="login-form">
-                <div class="success-message">
-                    <i class="fas fa-check-circle"></i>
-                    <?php echo htmlspecialchars($success); ?>
-                </div>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($isLoggedIn && $currentUser): ?>
-            <!-- User Profile Section (for logged-in users) -->
-            <div class="profile-section">
-                <div class="profile-header">
-                    <div class="profile-avatar">
-                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($currentUser['name']); ?>&background=5b1f1f&color=fff&size=150" alt="Profile" />
-                    </div>
-                    <div class="profile-info">
-                        <h2><?php echo htmlspecialchars($currentUser['name']); ?></h2>
-                        <p><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($currentUser['email_id']); ?></p>
-                        <p><i class="fas fa-id-card"></i> <strong>USN:</strong> <?php echo htmlspecialchars($currentUser['usn']); ?></p>
-                        <?php if (!empty($currentUser['designation'])): ?>
-                            <p><i class="fas fa-briefcase"></i> <strong>Role:</strong> <?php echo htmlspecialchars($currentUser['designation']); ?></p>
-                        <?php endif; ?>
-                    </div>
-                </div>
-
-                <div class="profile-actions">
-                    <a href="/alumni/index.php" class="btn btn-primary">
-                        <i class="fas fa-home"></i> Go to Dashboard
-                    </a>
-                    <a href="/alumni/logout.php" class="btn btn-secondary">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </div>
-            </div>
-
-        <?php else: ?>
-            <!-- Login Form -->
-            <form class="login-form" method="POST" action="">
-                <div class="form-group">
-                    <label for="usn">University Serial Number (USN)</label>
-                    <input type="text" id="usn" name="usn" placeholder="Enter your USN" required value="<?php echo htmlspecialchars($_POST['usn'] ?? ''); ?>">
-                </div>
-
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                </div>
-
-                <div class="form-options">
-                    <label class="remember-me">
-                        <input type="checkbox" name="remember" value="1"> Remember me
-                    </label>
-                    <a href="#" class="forgot-password">Forgot password?</a>
-                </div>
-
-                <button type="submit" class="login-btn">
-                    <i class="fas fa-sign-in-alt"></i> Sign In
-                </button>
-
-                <div class="divider">
-                    <span>or continue with</span>
-                </div>
-
-                <div class="social-login">
-                    <a href="#" class="social-btn">
-                        <i class="fab fa-google"></i> Google
-                    </a>
-                    <a href="#" class="social-btn">
-                        <i class="fab fa-linkedin"></i> LinkedIn
-                    </a>
-                </div>
-
-                <div class="signup-prompt">
-                    <p>Don't have an account?</p>
-                    <a href="#" class="signup-link">Create your account</a>
-                </div>
-            </form>
-        <?php endif; ?>
+            <h2>GM Alumni Network</h2>
+            <p>Connecting Success Stories</p>
+        </div>
     </div>
 
     <script>

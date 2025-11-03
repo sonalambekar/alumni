@@ -79,9 +79,24 @@ try {
 
         .couch-container {
             max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+            margin: 0 auto 0 15%; /* Add left margin to move right */
+            padding: 20px 40px 20px 20px; /* More right padding */
             font-family: 'Poppins', sans-serif;
+            transition: margin 0.3s ease;
+        }
+        
+        @media (max-width: 1200px) {
+            .couch-container {
+                margin-left: 10%;
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .couch-container {
+                margin-left: 0;
+                padding: 15px;
+            }
         }
 
         .page-header {

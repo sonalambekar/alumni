@@ -1,3 +1,24 @@
+<?php
+// Start output buffering at the highest level
+if (!headers_sent() && !in_array('ob_gzhandler', ob_list_handlers()) && ob_get_level() == 0) {
+    ob_start('ob_gzhandler');
+}
+
+try {
+    // Start session if not already started and headers not sent
+    if (!headers_sent() && session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    // Include database configuration if not already included
+    if (!function_exists('isLoggedIn')) {
+        require_once __DIR__ . '/includes/db_config.php';
+    }
+} catch (Exception $e) {
+    // Log error but don't output anything to prevent further header issues
+    error_log('Sidebar initialization error: ' . $e->getMessage());
+}
+?>
 <!-- Sidebar Navigation -->
 <div class="sidebar" id="sidebar">
     <!-- Mobile Menu Toggle Button -->
@@ -370,6 +391,14 @@
                     <span class="nav-text">Jobs</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="/alumni/pages/internships.php" class="nav-link">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M12 16h.01M16 16h.01M20 16h.01M4 12h16a2 2 0 002-2V8a2 2 0 00-2-2H4a2 2 0 00-2 2v4a2 2 0 002 2z"></path>
+                    </svg>
+                    <span class="nav-text">Internships</span>
+                </a>
+            </li>
 
             <li class="nav-item has-dropdown">
                 <a href="#" class="nav-link dropdown-toggle">
@@ -383,7 +412,6 @@
                 </a>
                 <ul class="dropdown-menu">
                     <li><a href="/alumni/pages/business-connect.php">Business Connect</a></li>
-                    <li><a href="/alumni/pages/couch-surfing.php">Couch Surfing</a></li>
                     <li><a href="/alumni/pages/member-support.php">Member Support</a></li>
                     <li><a href="/alumni/pages/couch_surfing_enterprises.php">Enterprises Couch Surfing</a></li>
                 </ul>
@@ -420,7 +448,6 @@
                 </a>
                 <ul class="dropdown-menu">
                     <li><a href="/alumni/pages/business-connect.php">Business Connect</a></li>
-                    <li><a href="/alumni/pages/couch-surfing.php">Couch Surfing</a></li>
                     <li><a href="/alumni/pages/member-support.php">Member Support</a></li>
                 </ul>
             </li>
@@ -453,6 +480,31 @@
             </li>
             <?php endif; ?>
         </ul>
+        
+        <!-- Profile Section -->
+        <?php if (isLoggedIn()): ?>
+        <?php $user = getCurrentUser(); ?>
+        <div class="profile-section" style="margin-top: auto; padding: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+            <a href="/alumni/pages/profile.php" class="nav-link" style="padding: 10px 16px;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; margin-right: 12px; flex-shrink: 0;">
+                        <img src="<?php 
+                            $userName = $user['name'] ?? 'User';
+                            echo !empty($user['profile_picture']) ? 
+                                '../uploads/profile_pictures/' . htmlspecialchars($user['profile_picture']) : 
+                                'https://ui-avatars.com/api/?name=' . urlencode($userName) . '&size=200&background=5b1f1f&color=fff'; 
+                        ?>" 
+                             alt="Profile" 
+                             style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="overflow: hidden;">
+                        <div style="font-weight: 500; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?php echo htmlspecialchars($user['name'] ?? 'User'); ?></div>
+                        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">View Profile</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <?php endif; ?>
     </nav>
 </div>
 

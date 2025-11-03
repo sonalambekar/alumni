@@ -1,0 +1,19 @@
+# Allow access to image files
+<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Prevent directory listing
+Options -Indexes
+
+# Enable URL rewriting if needed
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Allow direct access to files that exist
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    # Handle URL-encoded filenames
+    RewriteCond %{REQUEST_URI} ^(.+)\.(jpg|jpeg|png|gif|webp)$ [NC]
+    RewriteRule .* - [L]
+</IfModule>

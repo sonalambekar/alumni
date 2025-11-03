@@ -20,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $title = $_POST['title'] ?? '';
             $content = $_POST['content'] ?? '';
             $excerpt = $_POST['excerpt'] ?? '';
-            $featured_image = $_POST['featured_image'] ?? '';
             $is_featured = isset($_POST['is_featured']) ? 1 : 0;
             $publish_date = !empty($_POST['publish_date']) ? $_POST['publish_date'] : date('Y-m-d H:i:s');
             $is_active = isset($_POST['is_active']) ? 1 : 0;
@@ -28,10 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($title) && !empty($content)) {
                 try {
                     $stmt = $pdo->prepare("
-                        INSERT INTO news (title, content, excerpt, featured_image, author_id, publish_date, is_featured, is_active)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO news (title, content, excerpt, author_id, publish_date, is_featured, is_active)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ");
-                    $stmt->execute([$title, $content, $excerpt, $featured_image, $_SESSION['user_id'], $publish_date, $is_featured, $is_active]);
+                    $stmt->execute([$title, $content, $excerpt, $_SESSION['user_id'], $publish_date, $is_featured, $is_active]);
 
                     $success = "News article added successfully!";
                 } catch(PDOException $e) {
@@ -46,7 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $title = $_POST['title'] ?? '';
             $content = $_POST['content'] ?? '';
             $excerpt = $_POST['excerpt'] ?? '';
-            $featured_image = $_POST['featured_image'] ?? '';
             $is_featured = isset($_POST['is_featured']) ? 1 : 0;
             $publish_date = !empty($_POST['publish_date']) ? $_POST['publish_date'] : date('Y-m-d H:i:s');
             $is_active = isset($_POST['is_active']) ? 1 : 0;
@@ -55,10 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $stmt = $pdo->prepare("
                         UPDATE news
-                        SET title = ?, content = ?, excerpt = ?, featured_image = ?, publish_date = ?, is_featured = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+                        SET title = ?, content = ?, excerpt = ?, publish_date = ?, is_featured = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
                         WHERE id = ?
                     ");
-                    $stmt->execute([$title, $content, $excerpt, $featured_image, $publish_date, $is_featured, $is_active, $id]);
+                    $stmt->execute([$title, $content, $excerpt, $publish_date, $is_featured, $is_active, $id]);
 
                     $success = "News article updated successfully!";
                 } catch(PDOException $e) {
@@ -471,17 +469,6 @@ try {
     </div>
 
     <div class="dashboard-container">
-        <?php if (isset($success)): ?>
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($error)): ?>
-            <div class="alert alert-error">
-                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
 
         <!-- Add News Form -->
         <div class="form-container">
@@ -512,10 +499,6 @@ try {
                 </div>
 
                 <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" for="featured_image">Featured Image URL</label>
-                        <input type="url" id="featured_image" name="featured_image" class="form-input" placeholder="https://example.com/image.jpg">
-                    </div>
 
                     <div class="form-group">
                         <label class="form-label">
@@ -630,7 +613,6 @@ try {
                 document.getElementById('edit_title').value = article.title || '';
                 document.getElementById('edit_excerpt').value = article.excerpt || '';
                 document.getElementById('edit_content').value = article.content || '';
-                document.getElementById('edit_featured_image').value = article.featured_image || '';
                 document.getElementById('edit_publish_date').value = article.publish_date ? article.publish_date.slice(0, 16) : '';
                 document.getElementById('edit_is_featured').checked = (article.is_featured == 1);
                 document.getElementById('edit_is_active').checked = (article.is_active == 1);
@@ -678,10 +660,6 @@ try {
                 </div>
 
                 <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" for="edit_featured_image">Featured Image URL</label>
-                        <input type="url" id="edit_featured_image" name="featured_image" class="form-input" placeholder="https://example.com/image.jpg">
-                    </div>
 
                     <div class="form-group">
                         <label class="form-label">

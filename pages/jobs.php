@@ -1,112 +1,273 @@
+<?php
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once '../includes/db_config.php';
+
+// Check if user is logged in
+if (!isLoggedIn()) {
+    $_SESSION['redirect_url'] = $_SERVER['REQUEST_URI'];
+    header('Location: /alumni/login.php');
+    exit();
+}
+
+$currentUser = getCurrentUser();
+$isAdmin = isset($currentUser['is_admin']) && $currentUser['is_admin'] == 1;
+
+// Handle job submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_job'])) {
+    try {
+        // Check if user is admin
+        $isAdmin = isset($currentUser['is_admin']) && $currentUser['is_admin'] == 1;
+        
+        // Prepare the SQL query based on user role
+        if ($isAdmin) {
+            // For admin, directly insert as approved
+            $stmt = $pdo->prepare("INSERT INTO jobs (title, company, description, requirements, location, job_type, experience_level, salary_min, apply_link, posted_by, is_approved, posted_at) 
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())");
+            $stmt->execute([
+                $_POST['title'],
+                $_POST['company'],
+                $_POST['description'],
+                $_POST['requirements'] ?? '',
+                $_POST['location'],
+                $_POST['job_type'],
+                $_POST['experience_level'],
+                $_POST['salary_min'] ?? null,
+                $_POST['apply_link'],
+                $currentUser['id']
+            ]);
+            $success = "Job posted and approved successfully!";
+        } else {
+            // For regular users, insert as pending approval
+            $stmt = $pdo->prepare("INSERT INTO jobs (title, company, description, requirements, location, job_type, experience_level, salary_min, apply_link, posted_by, is_approved, posted_at) 
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())");
+            $stmt->execute([
+                $_POST['title'],
+                $_POST['company'],
+                $_POST['description'],
+                $_POST['requirements'] ?? '',
+                $_POST['location'],
+                $_POST['job_type'],
+                $_POST['experience_level'],
+                $_POST['salary_min'] ?? null,
+                $_POST['apply_link'],
+                $currentUser['id']
+            ]);
+            $success = "Job posted successfully! It will be visible after admin approval.";
+        }
+        // No need for this else block as we've handled both cases above
+        
+        // Redirect to prevent form resubmission
+        header('Location: jobs.php?success=1');
+        exit();
+    } catch (PDOException $e) {
+        $error = "Error posting job: " . $e->getMessage();
+        error_log('Job Posting Error: ' . $e->getMessage());
+    }
+}
+
+// Check for success message from redirect
+if (isset($_GET['success'])) {
+    $success = "Job posted successfully!";
+}
+
+// Fetch jobs with filters
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$location = isset($_GET['location']) ? trim($_GET['location']) : '';
+$jobType = isset($_GET['job_type']) ? $_GET['job_type'] : '';
+$experience = isset($_GET['experience']) ? $_GET['experience'] : '';
+
+$where = [];
+$params = [];
+
+if (!empty($search)) {
+    $where[] = "(j.title LIKE ? OR j.company LIKE ? OR j.description LIKE ?)";
+    $searchTerm = "%$search%";
+    $params[] = $searchTerm;
+    $params[] = $searchTerm;
+    $params[] = $searchTerm;
+}
+
+if (!empty($location)) {
+    $where[] = "j.location LIKE ?";
+    $params[] = "%$location%";
+}
+
+if (!empty($jobType)) {
+    $where[] = "j.job_type = ?";
+    $params[] = $jobType;
+}
+
+if (!empty($experience)) {
+    $where[] = "j.experience_level = ?";
+    $params[] = $experience;
+}
+
+$sql = "SELECT j.*, u.name as posted_by_name 
+        FROM jobs j 
+        LEFT JOIN users u ON j.posted_by = u.id 
+        WHERE j.is_active = 1 AND j.is_approved = 1";
+
+if (!empty($where)) {
+    $sql .= " AND " . implode(" AND ", $where);
+}
+
+$sql .= " ORDER BY j.posted_at DESC";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Board - Alumni Connect</title>
+    <title>Job Board - GM Alumni Network</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #5b1f1f;
+            --secondary-color: #ecc35c;
+            --bg-light: #f5f7fb;
+            --text-color: #333;
+            --text-light: #6b7280;
+            --border-color: #e5e7eb;
+            --white: #ffffff;
+            --border-radius: 12px;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Page Header */
         .page-header {
             background: linear-gradient(135deg, var(--primary-color) 0%, #7a2a2a 100%);
             color: var(--white);
-            padding: 60px 40px;
+            padding: 60px 20px;
             text-align: center;
+            margin-bottom: 40px;
         }
 
         .page-header h1 {
-            font-size: 42px;
-            margin-bottom: 15px;
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            font-weight: 700;
         }
 
+        .page-header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Search Container */
         .search-container {
-            position: sticky;
-            top: 20px;
-            z-index: 100;
             background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px auto;
-            max-width: 1000px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin: -50px auto 40px;
+            max-width: 1200px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            z-index: 10;
         }
 
-        .search-wrapper {
+        .search-bar {
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
-        .search-input-container {
-            display: flex;
-            align-items: center;
-            background: var(--bg-light);
-            border: 2px solid #e0e0e0;
-            border-radius: 50px;
-            padding: 5px;
-            transition: border-color 0.3s ease;
+        .search-input-wrapper {
+            flex: 1;
+            position: relative;
         }
 
-        .search-input-container:focus-within {
+        .search-input {
+            width: 100%;
+            padding: 14px 20px 14px 50px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(91, 31, 31, 0.1);
         }
 
         .search-icon {
-            width: 20px;
-            height: 20px;
-            color: var(--text-light);
-            margin: 0 15px;
-            flex-shrink: 0;
-        }
-
-        .search-input {
-            flex: 1;
-            border: none;
-            outline: none;
-            background: transparent;
-            padding: 15px 10px;
-            font-size: 16px;
-            color: var(--text-dark);
-        }
-
-        .search-input::placeholder {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
             color: var(--text-light);
         }
 
         .search-btn {
-            background: var(--primary-color);
+            background-color: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 25px;
-            padding: 12px 25px;
-            font-size: 14px;
+            border-radius: var(--border-radius);
+            padding: 14px 30px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 0 10px;
+            transition: var(--transition);
+            white-space: nowrap;
         }
 
         .search-btn:hover {
-            background: var(--secondary-color);
+            background-color: #4a1919;
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(91, 31, 31, 0.3);
         }
 
-        .search-filters {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
         }
 
         .filter-select {
-            padding: 12px 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 25px;
-            background: white;
-            font-size: 14px;
-            color: var(--text-dark);
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            background-color: white;
             cursor: pointer;
-            transition: border-color 0.3s ease;
-            min-width: 150px;
+            transition: var(--transition);
         }
 
         .filter-select:focus {
@@ -114,639 +275,847 @@
             border-color: var(--primary-color);
         }
 
-        .jobs-content {
-            padding: 20px 40px 60px;
+        .reset-btn {
             background-color: var(--bg-light);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 12px 24px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
         }
 
-        .jobs-list {
-            max-width: 1000px;
+        .reset-btn:hover {
+            background-color: #e5e7eb;
+        }
+
+        /* Jobs Grid */
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 24px;
+            padding: 0 20px 60px;
+            max-width: 1400px;
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
         }
 
         .job-card {
-            background-color: var(--white);
-            border-radius: 15px;
-            padding: 30px;
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
             box-shadow: var(--shadow);
             transition: var(--transition);
+            display: flex;
+            flex-direction: column;
             border: 2px solid transparent;
-            display: grid;
-            grid-template-columns: 80px 1fr auto;
-            gap: 25px;
-            align-items: center;
         }
 
         .job-card:hover {
-            border-color: var(--secondary-color);
+            transform: translateY(-4px);
             box-shadow: var(--shadow-lg);
+            border-color: var(--secondary-color);
         }
 
-        .company-logo {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--primary-color), #7a2a2a);
-            border-radius: 12px;
-            display: flex;
+        .job-card-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .company-badge {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            color: var(--white);
-            font-size: 28px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), #7a2a2a);
+            color: white;
+            border-radius: 10px;
             font-weight: 700;
-            flex-shrink: 0;
+            font-size: 1.3rem;
+            margin-bottom: 16px;
         }
 
-        .job-details h3 {
-            font-size: 22px;
+        .job-title {
+            font-size: 1.35rem;
             font-weight: 600;
             color: var(--primary-color);
             margin-bottom: 8px;
+            line-height: 1.3;
         }
 
         .company-name {
+            font-size: 1.05rem;
             color: var(--secondary-color);
-            font-weight: 500;
-            margin-bottom: 12px;
+            font-weight: 600;
+            margin-bottom: 16px;
         }
 
         .job-meta {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 12px;
+            gap: 12px;
         }
 
-        .job-meta-item {
-            display: flex;
+        .meta-badge {
+            display: inline-flex;
             align-items: center;
             gap: 6px;
-            color: var(--text-light);
-            font-size: 14px;
-        }
-
-        .job-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .job-tag {
-            background-color: rgba(236, 195, 92, 0.2);
-            color: var(--primary-color);
-            padding: 5px 12px;
+            padding: 6px 12px;
+            background-color: var(--bg-light);
             border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--text-color);
         }
 
-        .job-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: flex-end;
+        .meta-badge i {
+            color: var(--primary-color);
+            font-size: 0.9rem;
         }
 
-        .job-posted {
+        .job-card-body {
+            padding: 24px;
+            flex-grow: 1;
+        }
+
+        .job-description {
+            color: var(--text-color);
+            line-height: 1.7;
+            margin-bottom: 16px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .requirements-label {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .requirements {
             color: var(--text-light);
-            font-size: 13px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
-        .page-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, #7a2a2a 100%);
-            color: var(--white);
-            padding: 60px 40px;
+        .job-card-footer {
+            padding: 16px 24px;
+            background-color: var(--bg-light);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .posted-info {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .posted-info i {
+            margin-right: 4px;
+        }
+
+        .apply-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .apply-btn:hover {
+            background-color: #4a1919;
+            transform: translateX(2px);
+        }
+
+        .apply-btn i {
+            font-size: 0.85rem;
+        }
+
+        .no-jobs {
+            grid-column: 1 / -1;
             text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
         }
 
-        .page-header h1 {
-            font-size: 42px;
-            margin-bottom: 15px;
+        .no-jobs i {
+            font-size: 4rem;
+            color: var(--text-light);
+            margin-bottom: 24px;
+            opacity: 0.5;
         }
 
-        .page-header p {
-            font-size: 18px;
-            opacity: 0.9;
+        .no-jobs h3 {
+            color: var(--text-color);
+            margin-bottom: 12px;
+            font-size: 1.5rem;
         }
-        .modal {
+
+        .no-jobs p {
+            color: var(--text-light);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Floating Button */
+        .floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 64px;
+            height: 64px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 6px 20px rgba(91, 31, 31, 0.4);
+            cursor: pointer;
+            z-index: 999;
+            transition: var(--transition);
+            border: none;
+        }
+
+        .floating-btn:hover {
+            background-color: #4a1919;
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 10px 30px rgba(91, 31, 31, 0.5);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 9998;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
-        .modal.show {
-            display: flex;
+        .modal-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .modal-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .modal-container.show {
+            display: block;
         }
 
         .modal-content {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 700px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
+            background-color: white;
+            margin: 40px auto;
+            max-width: 650px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .modal-container.show .modal-content {
+            transform: translateY(0);
+            opacity: 1;
         }
 
         .modal-header {
+            padding: 24px 30px;
+            background-color: var(--primary-color);
+            color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #eee;
         }
 
         .modal-header h2 {
-            color: var(--primary-color);
-            font-size: 28px;
             margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
         }
 
-        .close {
-            font-size: 30px;
-            color: var(--text-light);
+        .close-modal {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8rem;
             cursor: pointer;
-            transition: color 0.3s ease;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: var(--transition);
+            line-height: 1;
         }
 
-        .close:hover {
-            color: var(--primary-color);
+        .close-modal:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-body {
+            padding: 30px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
         }
 
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: var(--text-dark);
+            color: var(--text-color);
+            font-size: 0.95rem;
         }
 
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
+        .form-control {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            font-family: inherit;
         }
 
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
+        .form-control:focus {
             outline: none;
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(91, 31, 31, 0.1);
         }
 
-        .form-group textarea {
+        textarea.form-control {
+            min-height: 100px;
             resize: vertical;
-            min-height: 80px;
         }
 
         .form-actions {
             display: flex;
-            gap: 15px;
             justify-content: flex-end;
+            gap: 12px;
             margin-top: 30px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #4a1919;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-light);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #e5e7eb;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            margin: 20px;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .jobs-grid {
+                grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            }
         }
 
         @media (max-width: 768px) {
-            .modal-content {
-                padding: 30px 20px;
-                width: 95%;
+            .page-header h1 {
+                font-size: 2rem;
             }
 
-            .form-actions {
+            .search-container {
+                padding: 20px;
+                margin: -30px 10px 30px;
+            }
+
+            .search-bar {
                 flex-direction: column;
             }
 
-            .form-actions button {
-                width: 100%;
+            .jobs-grid {
+                grid-template-columns: 1fr;
+                padding: 0 10px 60px;
+                gap: 20px;
             }
 
-            .page-header h1 {
-                font-size: 32px;
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .floating-btn {
+                width: 56px;
+                height: 56px;
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .modal-content {
+                margin: 20px auto;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page-header {
+                padding: 40px 15px;
+            }
+
+            .job-card-header,
+            .job-card-body {
+                padding: 20px;
+            }
+
+            .job-card-footer {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .apply-btn {
+                width: 100%;
+                justify-content: center;
             }
         }
     </style>
 </head>
-    <?php
-    // Check if specific job type filter is requested
-    $jobTypeFilter = '';
-    if (isset($_GET['type']) && $_GET['type'] === 'internship') {
-        $jobTypeFilter = 'internship';
-    }
-
-    // Check if post job mode is requested
-    $showPostJob = isset($_GET['post']) && $_GET['post'] === 'true';
-    ?>
+<body>
+    <?php include '../sidebar.php'; ?>
 
     <div class="main-content" id="mainContent">
-        <!-- Page Header -->
-        <div class="page-header">
-            <h1>
-                <?php
-                if ($jobTypeFilter === 'internship') {
-                    echo 'Internship Opportunities';
-                } elseif ($showPostJob) {
-                    echo 'Post Job Vacancies';
-                } else {
-                    echo 'Job Board';
-                }
-                ?>
-            </h1>
-            <p>
-                <?php
-                if ($jobTypeFilter === 'internship') {
-                    echo 'Discover exciting internship opportunities shared by alumni and partner companies';
-                } elseif ($showPostJob) {
-                    echo 'Share job openings from your company and help fellow alumni advance their careers';
-                } else {
-                    echo 'Find your next career opportunity in our exclusive alumni job board';
-                }
-                ?>
-            </p>
-        </div>
-
-        <!-- Floating Search Bar -->
-        <div class="search-container">
-            <div class="search-wrapper">
-                <div class="search-input-container">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="M21 21l-4.35-4.35"></path>
-                    </svg>
-                    <input type="text" id="jobSearch" placeholder="Search jobs by title, company, location, or skills..." class="search-input">
-                    <button class="search-btn">Search</button>
-                </div>
-                <div class="search-filters">
-                    <select class="filter-select" id="locationFilter">
-                        <option value="">All Locations</option>
-                        <option value="bengaluru">Bengaluru</option>
-                        <option value="mumbai">Mumbai</option>
-                        <option value="delhi">Delhi</option>
-                        <option value="hyderabad">Hyderabad</option>
-                        <option value="pune">Pune</option>
-                    </select>
-                    <select class="filter-select" id="typeFilter">
-                        <option value="">All Types</option>
-                        <option value="full-time">Full-time</option>
-                        <option value="part-time">Part-time</option>
-                        <option value="contract">Contract</option>
-                        <option value="internship">Internship</option>
-                    </select>
-                </div>
+        <?php if (isset($success)): ?>
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
             </div>
-        </div>
-
-        <!-- Post Job Button -->
-        <?php if ($showPostJob): ?>
-        <div style="text-align: right; margin: 20px auto; max-width: 1000px;">
-            <button class="btn" onclick="togglePostJobModal()" style="background: var(--secondary-color);">
-                <i class="fas fa-plus"></i> Post Job
-            </button>
-        </div>
+        <?php endif; ?>
+        <?php if (isset($error)): ?>
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+            </div>
         <?php endif; ?>
 
-        <!-- Post Job Modal -->
-        <div id="postJobModal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Post a Job</h2>
-                    <span class="close" onclick="closePostJobModal()">&times;</span>
-                </div>
-                <form id="postJobForm">
-                    <div class="form-group">
-                        <label for="jobTitle">Job Title</label>
-                        <input type="text" id="jobTitle" name="title" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="companyName">Company Name</label>
-                        <input type="text" id="companyName" name="company" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="jobDescription">Job Description</label>
-                        <textarea id="jobDescription" name="description" rows="4" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="jobRequirements">Requirements</label>
-                        <textarea id="jobRequirements" name="requirements" rows="3"></textarea>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div class="form-group">
-                            <label for="jobLocation">Location</label>
-                            <input type="text" id="jobLocation" name="location" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="jobType">Job Type</label>
-                            <select id="jobType" name="job_type" required>
-                                <option value="full-time">Full-time</option>
-                                <option value="part-time">Part-time</option>
-                                <option value="contract">Contract</option>
-                                <option value="internship">Internship</option>
-                                <option value="freelance">Freelance</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div class="form-group">
-                            <label for="experienceLevel">Experience Level</label>
-                            <select id="experienceLevel" name="experience_level">
-                                <option value="entry">Entry Level</option>
-                                <option value="mid">Mid Level</option>
-                                <option value="senior">Senior Level</option>
-                                <option value="executive">Executive</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="salaryRange">Salary Range</label>
-                            <input type="text" id="salaryRange" name="salary_range" placeholder="e.g., ₹10-15 LPA">
-                        </div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div class="form-group">
-                            <label for="applicationDeadline">Application Deadline</label>
-                            <input type="date" id="applicationDeadline" name="application_deadline">
-                        </div>
-                        <div class="form-group">
-                            <label for="contactEmail">Contact Email</label>
-                            <input type="email" id="contactEmail" name="contact_email" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="applicationUrl">Application URL (optional)</label>
-                        <input type="url" id="applicationUrl" name="application_url" placeholder="https://company.com/careers/job">
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closePostJobModal()">Cancel</button>
-                        <button type="submit" class="btn">Post Job</button>
-                    </div>
-                </form>
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="container">
+                <h1><i class="fas fa-briefcase"></i> Job Opportunities</h1>
+                <p>Discover career opportunities and connect with fellow alumni</p>
             </div>
         </div>
-            <div class="jobs-list">
-                <div class="job-card">
-                    <div class="company-logo">TI</div>
-                    <div class="job-details">
-                        <h3>Senior Software Engineer</h3>
-                        <div class="company-name">Tech Innovations Inc.</div>
-                        <div class="job-meta">
-                            <span class="job-meta-item">📍 Bengaluru, India</span>
-                            <span class="job-meta-item">💼 Full-time</span>
-                            <span class="job-meta-item">💰 ₹20-30 LPA</span>
-                        </div>
-                        <div class="job-tags">
-                            <span class="job-tag">React</span>
-                            <span class="job-tag">Node.js</span>
-                            <span class="job-tag">AWS</span>
-                        </div>
-                    </div>
-                    <div class="job-actions">
-                        <button class="btn">Apply Now</button>
-                        <span class="job-posted">Posted 2 days ago</span>
-                    </div>
-                </div>
 
-                <div class="job-card">
-                    <div class="company-logo">FG</div>
-                    <div class="job-details">
-                        <h3>Product Manager</h3>
-                        <div class="company-name">FinTech Global</div>
-                        <div class="job-meta">
-                            <span class="job-meta-item">📍 Mumbai, India</span>
-                            <span class="job-meta-item">💼 Full-time</span>
-                            <span class="job-meta-item">💰 ₹25-35 LPA</span>
-                        </div>
-                        <div class="job-tags">
-                            <span class="job-tag">Product Strategy</span>
-                            <span class="job-tag">Agile</span>
-                            <span class="job-tag">FinTech</span>
-                        </div>
+        <!-- Search and Filter Section -->
+        <div class="container">
+            <form class="search-container" method="GET" action="">
+                <div class="search-bar">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            name="search" 
+                            class="search-input" 
+                            placeholder="Search by job title, company, or keywords..."
+                            value="<?php echo htmlspecialchars($search); ?>"
+                        >
                     </div>
-                    <div class="job-actions">
-                        <button class="btn">Apply Now</button>
-                        <span class="job-posted">Posted 5 days ago</span>
-                    </div>
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i> Search
+                    </button>
                 </div>
+                
+                <div class="filters">
+                    <select class="filter-select" name="location">
+                        <option value="">📍 All Locations</option>
+                        <option value="Bengaluru" <?php echo $location === 'Bengaluru' ? 'selected' : ''; ?>>Bengaluru</option>
+                        <option value="Mumbai" <?php echo $location === 'Mumbai' ? 'selected' : ''; ?>>Mumbai</option>
+                        <option value="Delhi" <?php echo $location === 'Delhi' ? 'selected' : ''; ?>>Delhi</option>
+                        <option value="Hyderabad" <?php echo $location === 'Hyderabad' ? 'selected' : ''; ?>>Hyderabad</option>
+                        <option value="Pune" <?php echo $location === 'Pune' ? 'selected' : ''; ?>>Pune</option>
+                        <option value="Remote" <?php echo $location === 'Remote' ? 'selected' : ''; ?>>Remote</option>
+                    </select>
+                    
+                    <select class="filter-select" name="job_type">
+                        <option value="">💼 All Job Types</option>
+                        <option value="Full-time" <?php echo $jobType === 'Full-time' ? 'selected' : ''; ?>>Full-time</option>
+                        <option value="Part-time" <?php echo $jobType === 'Part-time' ? 'selected' : ''; ?>>Part-time</option>
+                        <option value="Contract" <?php echo $jobType === 'Contract' ? 'selected' : ''; ?>>Contract</option>
+                        <option value="Internship" <?php echo $jobType === 'Internship' ? 'selected' : ''; ?>>Internship</option>
+                    </select>
+                    
+                    <select class="filter-select" name="experience">
+                        <option value="">📊 Experience Level</option>
+                        <option value="Entry Level" <?php echo $experience === 'Entry Level' ? 'selected' : ''; ?>>Entry Level</option>
+                        <option value="Mid Level" <?php echo $experience === 'Mid Level' ? 'selected' : ''; ?>>Mid Level</option>
+                        <option value="Senior Level" <?php echo $experience === 'Senior Level' ? 'selected' : ''; ?>>Senior Level</option>
+                        <option value="Executive" <?php echo $experience === 'Executive' ? 'selected' : ''; ?>>Executive</option>
+                    </select>
+                    
+                    <a href="jobs.php" class="reset-btn">
+                        <i class="fas fa-undo"></i> Reset Filters
+                    </a>
+                </div>
+            </form>
+        </div>
 
-                <div class="job-card">
-                    <div class="company-logo">DS</div>
-                    <div class="job-details">
-                        <h3>Data Scientist</h3>
-                        <div class="company-name">DataSmart Analytics</div>
-                        <div class="job-meta">
-                            <span class="job-meta-item">📍 Hyderabad, India</span>
-                            <span class="job-meta-item">💼 Full-time</span>
-                            <span class="job-meta-item">💰 ₹18-28 LPA</span>
-                        </div>
-                        <div class="job-tags">
-                            <span class="job-tag">Python</span>
-                            <span class="job-tag">Machine Learning</span>
-                            <span class="job-tag">SQL</span>
-                        </div>
-                    </div>
-                    <div class="job-actions">
-                        <button class="btn">Apply Now</button>
-                        <span class="job-posted">Posted 1 week ago</span>
-                    </div>
+        <!-- Jobs Grid -->
+        <div class="jobs-grid">
+            <?php if (empty($jobs)): ?>
+                <div class="no-jobs">
+                    <i class="fas fa-briefcase"></i>
+                    <h3>No Jobs Available</h3>
+                    <p>There are currently no job postings matching your criteria. Try adjusting your filters or check back later.</p>
                 </div>
+            <?php else: ?>
+                <?php foreach ($jobs as $job): ?>
+                    <div class="job-card">
+                        <div class="job-card-header">
+                            <div class="company-badge">
+                                <?php echo strtoupper(substr($job['company'], 0, 1)); ?>
+                            </div>
+                            <h3 class="job-title"><?php echo htmlspecialchars($job['title']); ?></h3>
+                            <div class="company-name"><?php echo htmlspecialchars($job['company']); ?></div>
+                            
+                            <div class="job-meta">
+                                <?php if (!empty($job['location'])): ?>
+                                    <span class="meta-badge">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <?php echo htmlspecialchars($job['location']); ?>
+                                    </span>
+                                <?php endif; ?>
+                                
+                                <?php if (!empty($job['job_type'])): ?>
+                                    <span class="meta-badge">
+                                        <i class="fas fa-briefcase"></i>
+                                        <?php echo htmlspecialchars($job['job_type']); ?>
+                                    </span>
+                                <?php endif; ?>
+                                
+                                <?php if (!empty($job['experience_level'])): ?>
+                                    <span class="meta-badge">
+                                        <i class="fas fa-chart-line"></i>
+                                        <?php echo htmlspecialchars($job['experience_level']); ?>
+                                    </span>
+                                <?php endif; ?>
+                                
+                                <?php if (!empty($job['salary_min'])): ?>
+                                    <span class="meta-badge">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                        <?php echo 'From ' . htmlspecialchars($job['salary_min']); ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        
+                        <div class="job-card-body">
+                            <?php if (!empty($job['description'])): ?>
+                                <p class="job-description"><?php echo htmlspecialchars($job['description']); ?></p>
+                            <?php endif; ?>
+                            
+                            <?php if (!empty($job['requirements'])): ?>
+                                <div class="requirements-label">Requirements:</div>
+                                <div class="requirements"><?php echo nl2br(htmlspecialchars($job['requirements'])); ?></div>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="job-card-footer">
+                            <div class="posted-info">
+                                <i class="far fa-clock"></i>
+                                <?php 
+                                if (!empty($job['posted_at'])) {
+                                    $postedDate = new DateTime($job['posted_at']);
+                                    $now = new DateTime();
+                                    $diff = $now->diff($postedDate);
+                                    
+                                    if ($diff->days == 0) {
+                                        echo 'Today';
+                                    } elseif ($diff->days == 1) {
+                                        echo 'Yesterday';
+                                    } elseif ($diff->days < 7) {
+                                        echo $diff->days . ' days ago';
+                                    } else {
+                                        echo $postedDate->format('M j, Y');
+                                    }
+                                } else {
+                                    echo 'Recently';
+                                }
+                                ?>
+                            </div>
+                            
+                            <?php if (!empty($job['apply_link'])): ?>
+                                <a href="<?php echo htmlspecialchars($job['apply_link']); ?>" 
+                                   class="apply-btn" 
+                                   target="_blank">
+                                    Apply Now <i class="fas fa-arrow-right"></i>
+                                </a>
+                            <?php else: ?>
+                                <button class="apply-btn" disabled style="opacity: 0.6; cursor: not-allowed;">
+                                    No Link Available
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
 
-                <div class="job-card">
-                    <div class="company-logo">MC</div>
-                    <div class="job-details">
-                        <h3>Marketing Manager</h3>
-                        <div class="company-name">Marketing Creatives Ltd.</div>
-                        <div class="job-meta">
-                            <span class="job-meta-item">📍 Delhi, India</span>
-                            <span class="job-meta-item">💼 Full-time</span>
-                            <span class="job-meta-item">💰 ₹15-22 LPA</span>
-                        </div>
-                        <div class="job-tags">
-                            <span class="job-tag">Digital Marketing</span>
-                            <span class="job-tag">SEO</span>
-                            <span class="job-tag">Content Strategy</span>
-                        </div>
-                    </div>
-                    <div class="job-actions">
-                        <button class="btn">Apply Now</button>
-                        <span class="job-posted">Posted 1 week ago</span>
-                    </div>
-                </div>
+        <!-- Floating Action Button -->
+        <button type="button" class="floating-btn" onclick="openModal()" title="Post a Job">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
 
-                <div class="job-card">
-                    <div class="company-logo">UX</div>
-                    <div class="job-details">
-                        <h3>UX/UI Designer</h3>
-                        <div class="company-name">UX Design Studio</div>
-                        <div class="job-meta">
-                            <span class="job-meta-item">📍 Pune, India</span>
-                            <span class="job-meta-item">💼 Full-time</span>
-                            <span class="job-meta-item">💰 ₹12-18 LPA</span>
-                        </div>
-                        <div class="job-tags">
-                            <span class="job-tag">Figma</span>
-                            <span class="job-tag">User Research</span>
-                            <span class="job-tag">Prototyping</span>
-                        </div>
-                    </div>
-                    <div class="job-actions">
-                        <button class="btn">Apply Now</button>
-                        <span class="job-posted">Posted 2 weeks ago</span>
-                    </div>
-                </div>
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
 
-                <div class="job-card">
-                    <div class="company-logo">BC</div>
-                    <div class="job-details">
-                        <h3>Business Analyst</h3>
-                        <div class="company-name">Business Consulting Group</div>
-                        <div class="job-meta">
-                            <span class="job-meta-item">📍 Gurgaon, India</span>
-                            <span class="job-meta-item">💼 Full-time</span>
-                            <span class="job-meta-item">💰 ₹16-24 LPA</span>
-                        </div>
-                        <div class="job-tags">
-                            <span class="job-tag">Business Intelligence</span>
-                            <span class="job-tag">Excel</span>
-                            <span class="job-tag">Tableau</span>
-                        </div>
+    <!-- Modal Container -->
+    <div class="modal-container" id="modalContainer">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Post a New Job</h2>
+                <button type="button" class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="" onsubmit="return validateForm()">
+                    <div class="form-group">
+                        <label for="title">Job Title *</label>
+                        <input type="text" id="title" name="title" class="form-control" 
+                               placeholder="e.g., Senior Software Engineer" required>
                     </div>
-                    <div class="job-actions">
-                        <button class="btn">Apply Now</button>
-                        <span class="job-posted">Posted 2 weeks ago</span>
+                    
+                    <div class="form-group">
+                        <label for="company">Company Name *</label>
+                        <input type="text" id="company" name="company" class="form-control" 
+                               placeholder="e.g., Tech Corp Inc." required>
                     </div>
-                </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Job Description *</label>
+                        <textarea id="description" name="description" class="form-control" 
+                                  placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="requirements">Requirements</label>
+                        <textarea id="requirements" name="requirements" class="form-control" 
+                                  placeholder="List the key requirements and qualifications (one per line)"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location">Location *</label>
+                        <input type="text" id="location" name="location" class="form-control" 
+                               placeholder="e.g., Bengaluru, India or Remote" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="job_type">Job Type *</label>
+                        <select id="job_type" name="job_type" class="form-control" required>
+                            <option value="">Select Job Type</option>
+                            <option value="Full-time">Full-time</option>
+                            <option value="Part-time">Part-time</option>
+                            <option value="Contract">Contract</option>
+                            <option value="Internship">Internship</option>
+                            <option value="Temporary">Temporary</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="experience_level">Experience Level *</label>
+                        <select id="experience_level" name="experience_level" class="form-control" required>
+                            <option value="">Select Experience Level</option>
+                            <option value="Entry Level">Entry Level (0-2 years)</option>
+                            <option value="Mid Level">Mid Level (3-5 years)</option>
+                            <option value="Senior Level">Senior Level (5+ years)</option>
+                            <option value="Executive">Executive/Leadership</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="salary_min">Minimum Salary</label>
+                        <input type="text" id="salary_min" name="salary_min" class="form-control" 
+                               placeholder="e.g., ₹8LPA or $60,000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="apply_link">Application Link *</label>
+                        <input type="url" id="apply_link" name="apply_link" class="form-control" 
+                               placeholder="https://example.com/careers/apply" required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" name="submit_job" class="btn btn-primary">
+                            <i class="fas fa-check"></i> Post Job
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
     <script>
-        // Modal functions
-        function togglePostJobModal() {
-            const modal = document.getElementById('postJobModal');
-            modal.classList.toggle('show');
-        }
-
-        function closePostJobModal() {
-            document.getElementById('postJobModal').classList.remove('show');
-        }
-
-        // Close modal when clicking outside
-        document.getElementById('postJobModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closePostJobModal();
+        // Simple modal functions
+        function openModal() {
+            const overlay = document.getElementById('modalOverlay');
+            const container = document.getElementById('modalContainer');
+            
+            if (overlay && container) {
+                document.body.classList.add('modal-open');
+                overlay.classList.add('show');
+                container.classList.add('show');
             }
-        });
+        }
 
-        // Handle post job form submission
-        document.getElementById('postJobForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-
-            fetch('/alumni/submit_job.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Job posted successfully!');
-                    closePostJobModal();
-                    this.reset();
-                    // Optionally reload the page or add the job to the list
-                } else {
-                    alert('Error posting job. Please try again.');
+        function closeModal() {
+            const overlay = document.getElementById('modalOverlay');
+            const container = document.getElementById('modalContainer');
+            
+            if (overlay && container) {
+                document.body.classList.remove('modal-open');
+                overlay.classList.remove('show');
+                container.classList.remove('show');
+                
+                // Reset form
+                const form = container.querySelector('form');
+                if (form) {
+                    form.reset();
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error posting job. Please try again.');
-            });
-        });
+            }
+        }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const jobSearch = document.getElementById('jobSearch');
-            const locationFilter = document.getElementById('locationFilter');
-            const typeFilter = document.getElementById('typeFilter');
-            const searchBtn = document.querySelector('.search-btn');
-            const jobCards = document.querySelectorAll('.job-card');
+        function validateForm() {
+            const requiredFields = document.querySelectorAll('[required]');
+            let isValid = true;
+            let firstInvalid = null;
 
-            // Set initial filter based on URL parameter
-            <?php if ($jobTypeFilter === 'internship'): ?>
-                if (typeFilter) {
-                    typeFilter.value = 'internship';
-                }
-            <?php endif; ?>
-
-            // Job search functionality
-            function searchJobs() {
-                const searchTerm = jobSearch ? jobSearch.value.toLowerCase() : '';
-                const locationValue = locationFilter ? locationFilter.value.toLowerCase() : '';
-                const typeValue = typeFilter ? typeFilter.value.toLowerCase() : '';
-
-                jobCards.forEach(card => {
-                    const jobTitle = card.querySelector('h3').textContent.toLowerCase();
-                    const companyName = card.querySelector('.company-name').textContent.toLowerCase();
-                    const jobLocation = card.querySelector('.job-meta-item').textContent.toLowerCase();
-                    const jobTags = Array.from(card.querySelectorAll('.job-tag')).map(tag => tag.textContent.toLowerCase());
-
-                    const matchesSearch = searchTerm === '' ||
-                        jobTitle.includes(searchTerm) ||
-                        companyName.includes(searchTerm) ||
-                        jobTags.some(tag => tag.includes(searchTerm));
-
-                    const matchesLocation = locationValue === '' ||
-                        jobLocation.includes(locationValue);
-
-                    const matchesType = typeValue === '' ||
-                        card.querySelector('.job-meta').textContent.toLowerCase().includes(typeValue);
-
-                    if (matchesSearch && matchesLocation && matchesType) {
-                        card.style.display = 'grid';
-                    } else {
-                        card.style.display = 'none';
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.style.borderColor = '#f87171';
+                    if (!firstInvalid) {
+                        firstInvalid = field;
                     }
+                } else {
+                    field.style.borderColor = '#e5e7eb';
+                }
+            });
+
+            if (!isValid && firstInvalid) {
+                firstInvalid.focus();
+                alert('Please fill in all required fields marked with *');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Auto-hide alerts
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    alert.style.transition = 'opacity 0.5s ease';
+                    setTimeout(() => alert.remove(), 500);
+                }, 5000);
+            });
+
+            // Auto-resize textareas
+            const textareas = document.querySelectorAll('textarea.form-control');
+            textareas.forEach(textarea => {
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = (this.scrollHeight) + 'px';
                 });
-            }
-
-            // Event listeners
-            if (jobSearch) {
-                jobSearch.addEventListener('input', searchJobs);
-            }
-
-            if (locationFilter) {
-                locationFilter.addEventListener('change', searchJobs);
-            }
-
-            if (typeFilter) {
-                typeFilter.addEventListener('change', searchJobs);
-            }
-
-            if (searchBtn) {
-                searchBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    searchJobs();
-                });
-            }
-
-            // Initialize search with current filters
-            searchJobs();
+            });
         });
     </script>
 </body>
