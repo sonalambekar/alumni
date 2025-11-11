@@ -1,46 +1,122 @@
 <?php
-// Sample events data (in a real app, this would come from a database)
-$events = [
-    '2025-12-15' => [
-        ['title' => 'Annual Alumni Reunion 2025', 'time' => '18:00 - 22:00', 'location' => 'University Campus, Main Auditorium', 'description' => 'Join us for our biggest alumni gathering of the year! Reconnect with classmates, network with professionals, and celebrate our shared legacy.'],
+require_once '../includes/db_config.php';
+
+// Initialize events array
+$events = [];
+
+// Check database connection
+if (!$pdo) {
+    die("Database connection failed");
+}
+
+// Check if table exists
+$tableCheck = $pdo->query("SHOW TABLES LIKE 'events'");
+if ($tableCheck->rowCount() == 0) {
+    die("Events table does not exist");
+}
+
+// Fetch active events from database
+$currentDate = date('Y-m-d');
+$query = "
+    SELECT 
+        id, 
+        title, 
+        description, 
+        event_date, 
+        end_date,
+        location,
+        event_type
+    FROM events 
+    WHERE is_active = 1 
+    AND (end_date IS NULL OR end_date >= :currentDate)
+    ORDER BY event_date ASC
+";
+
+$stmt = $pdo->prepare($query);
+$stmt->execute(['currentDate' => $currentDate]);
+$dbEvents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Format events for the calendar
+foreach ($dbEvents as $event) {
+    $eventDate = $event['event_date'];
+    $endDate = $event['end_date'] ?? $event['event_date'];
+    
+    // If it's a multi-day event, create entries for each day
+    $current = new DateTime($eventDate);
+    $end = new DateTime($endDate);
+    $end->modify('+1 day'); // Include the end date
+    
+    while ($current < $end) {
+        $dateKey = $current->format('Y-m-d');
+        
+        $events[$dateKey][] = [
+            'id' => $event['id'],
+            'title' => $event['title'],
+            'location' => $event['location'] ?? '',
+            'description' => $event['description'] ?? '',
+            'event_type' => $event['event_type']
+        ];
+        
+        $current->modify('+1 day');
+    }
+}
+
+// Add sample events for November, December, and January
+$sampleEvents = [
+    [
+        'id' => 'sample1',
+        'title' => 'Alumni Networking Mixer',
+        'description' => 'Join us for an evening of networking with fellow alumni. Drinks and appetizers will be served.',
+        'location' => 'GMU Alumni Center',
+        'event_date' => date('Y-11-15 18:00:00'),
+        'event_type' => 'networking'
     ],
-    '2025-12-22' => [
-        ['title' => 'Tech Leaders Networking Night', 'time' => '19:00 - 21:30', 'location' => 'Tech Hub, Bengaluru', 'description' => 'An exclusive evening for alumni working in technology. Share insights, explore collaborations, and expand your professional network.'],
+    [
+        'id' => 'sample2',
+        'title' => 'Annual Alumni Gala',
+        'description' => 'Our biggest event of the year! Celebrate with fellow alumni and support student scholarships.',
+        'location' => 'Grand Ballroom, University Center',
+        'event_date' => date('Y-12-05 19:00:00'),
+        'event_type' => 'gala'
     ],
-    '2026-01-05' => [
-        ['title' => 'Alumni Career Fair 2025', 'time' => '10:00 - 17:00', 'location' => 'Convention Center, Delhi', 'description' => 'Connect with top employers and explore exciting career opportunities. Featuring 50+ companies and exclusive alumni networking sessions.'],
+    [
+        'id' => 'sample3',
+        'title' => 'Holiday Social',
+        'description' => 'Celebrate the holiday season with your GMU family. Ugly sweaters encouraged!',
+        'location' => 'The Hub',
+        'event_date' => date('Y-12-20 17:00:00'),
+        'event_type' => 'social'
     ],
-    '2026-01-12' => [
-        ['title' => 'Mentorship Program Launch', 'time' => '17:00 - 19:00', 'location' => 'Virtual Event (Zoom)', 'description' => 'Launch of our new mentorship program connecting experienced alumni with recent graduates. Learn how you can make a difference.'],
+    [
+        'id' => 'sample4',
+        'title' => 'New Year Kickoff Brunch',
+        'description' => 'Start the new year right with a delicious brunch and goal-setting workshop.',
+        'location' => 'Johnson Center',
+        'event_date' => (date('Y')+1) . '-01-10 11:00:00',
+        'event_type' => 'workshop'
     ],
-    '2026-01-20' => [
-        ['title' => 'Alumni Sports Day', 'time' => '08:00 - 18:00', 'location' => 'University Sports Complex', 'description' => 'Relive your college days with cricket, football, badminton, and more! Bring your family for a fun-filled day of sports and camaraderie.'],
-    ],
-    '2026-02-01' => [
-        ['title' => 'Annual Gala Dinner', 'time' => '19:00 - 23:00', 'location' => 'Grand Hotel, Mumbai', 'description' => 'An elegant evening celebrating alumni achievements. Featuring awards ceremony, live entertainment, and gourmet dining.'],
-    ],
-    '2026-01-26' => [
-        ['title' => 'Republic Day Celebration', 'time' => '08:00 - 12:00', 'location' => 'University Grounds', 'description' => 'Join the university community in celebrating India\'s Republic Day with flag hoisting, cultural performances, and patriotic speeches.'],
-    ],
-    '2026-03-15' => [
-        ['title' => 'Holi Cultural Fest', 'time' => '10:00 - 16:00', 'location' => 'College Campus', 'description' => 'Celebrate the festival of colors with traditional Holi games, music, dance, and authentic Indian cuisine. Open to all students and alumni.'],
-    ],
-    '2026-04-14' => [
-        ['title' => 'Ambedkar Jayanti', 'time' => '09:00 - 11:00', 'location' => 'Auditorium', 'description' => 'Commemorate the birth anniversary of Dr. B.R. Ambedkar with lectures, discussions, and cultural programs highlighting social justice.'],
-    ],
-    '2026-08-15' => [
-        ['title' => 'Independence Day Festivities', 'time' => '07:00 - 13:00', 'location' => 'University Stadium', 'description' => 'National celebration with flag ceremony, parade, cultural dances, and speeches honoring India\'s independence.'],
-    ],
-    '2026-10-02' => [
-        ['title' => 'Gandhi Jayanti', 'time' => '08:00 - 10:00', 'location' => 'Campus Garden', 'description' => 'Observe Mahatma Gandhi\'s birthday with prayer meetings, cleanliness drives, and discussions on non-violence and peace.'],
-    ],
-    '2026-11-14' => [
-        ['title' => 'Children\'s Day Celebration', 'time' => '14:00 - 18:00', 'location' => 'Community Hall', 'description' => 'Fun activities, games, and cultural programs for children in the university community, celebrating childhood and education.'],
-    ],
-    '2026-12-25' => [
-        ['title' => 'Christmas Cultural Evening', 'time' => '18:00 - 22:00', 'location' => 'University Chapel', 'description' => 'Festive evening with carol singing, nativity plays, and holiday treats to celebrate Christmas with the alumni family.'],
+    [
+        'id' => 'sample5',
+        'title' => 'Alumni Career Fair',
+        'description' => 'Connect with top employers and explore career opportunities.',
+        'location' => 'Dewberry Hall',
+        'event_date' => (date('Y')+1) . '-01-25 10:00:00',
+        'event_type' => 'career'
     ]
 ];
+
+// Add sample events to the events array
+foreach ($sampleEvents as $event) {
+    $dateKey = date('Y-m-d', strtotime($event['event_date']));
+    $events[$dateKey][] = [
+        'id' => $event['id'],
+        'title' => $event['title'],
+        'description' => $event['description'],
+        'location' => $event['location'],
+        'event_type' => $event['event_type'],
+        'event_date' => $event['event_date']
+    ];
+}
 ?>
 
 <!DOCTYPE html>
@@ -95,6 +171,7 @@ $events = [
             margin: 0 20px;
             min-width: 200px;
             font-weight: 500;
+            margin-bottom: 5px;
         }
 
         .calendar-nav-btn {
@@ -169,19 +246,37 @@ $events = [
             color: var(--text-color);
         }
 
-        .event-dot {
+        .event-indicator {
             width: 8px;
             height: 8px;
-            background-color: var(--secondary-color);
+            background-color: var(--primary-color);
             border-radius: 50%;
-            margin: 3px auto;
-            display: block;
+            margin: 4px auto 0;
+            opacity: 0.9;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            position: relative;
         }
 
-        .event-dot:hover {
-            transform: scale(1.5);
+        .event-indicator:hover {
+            transform: scale(1.3);
+            opacity: 1;
+        }
+
+        .event-type-social {
+            background-color: #3b82f6; /* Blue */
+        }
+
+        .event-type-workshop {
+            background-color: #10b981; /* Green */
+        }
+
+        .event-type-conference {
+            background-color: #8b5cf6; /* Purple */
+        }
+
+        .event-type-other {
+            background-color: #6b7280; /* Gray */
         }
 
         .other-month {
@@ -199,12 +294,137 @@ $events = [
             font-weight: 700;
         }
 
+        .event-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin: 2px auto 0;
+            position: relative;
+        }
+        
+        .event-type-academic { background-color: #5b1f1f; }
+        .event-type-cultural { background-color: #e74c3c; }
+        .event-type-sports { background-color: #2ecc71; }
+        .event-type-workshop { background-color: #3498db; }
+        .event-type-conference { background-color: #9b59b6; }
+        .event-type-other { background-color: #f39c12; }
+        
+        .event-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: var(--secondary-color);
+            color: var(--primary-color);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
         /* Event Details Modal */
         .event-details {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .event-details.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .event-details-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .event-details.active .event-details-content {
+            transform: translateY(0);
+        }
+
+        .event-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f9fafb;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .event-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 1.3rem;
+        }
+
+        .event-type-badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .event-description {
+            margin-top: 10px;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        .event-divider {
+            border: none;
+            height: 1px;
+            background-color: #e5e7eb;
+            margin: 15px 0;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            transition: color 0.2s ease;
+        }
+
+        .close-btn:hover {
+            color: var(--primary-color);
+        }
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.6);
@@ -293,6 +513,60 @@ $events = [
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
+        .event-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .event-type-badge {
+            background-color: #f0f0f0;
+            color: #555;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            text-transform: capitalize;
+        }
+        
+        .event-description {
+            margin-top: 10px;
+            color: #555;
+            line-height: 1.5;
+        }
+        
+        .event-item p {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .event-item p i {
+            margin-right: 8px;
+            color: var(--primary-color);
+            width: 16px;
+            text-align: center;
+        }
+        
+        .registration-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .registration-link:hover {
+            text-decoration: underline;
+            color: #4a1a1a;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .calendar-day {
@@ -362,23 +636,36 @@ $events = [
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Make sure the events data is available globally
+        window.events = <?php echo json_encode($events); ?>;
         const calendarDays = document.getElementById('calendarDays');
         const currentMonthElement = document.getElementById('currentMonth');
         const prevMonthBtn = document.getElementById('prevMonth');
         const nextMonthBtn = document.getElementById('nextMonth');
-        const eventDetails = document.getElementById('eventDetails');
+        const eventDetails = document.getElementById('eventModal');
         const closeEventBtn = document.getElementById('closeEvent');
 
         let currentDate = new Date();
         let currentMonth = currentDate.getMonth();
         let currentYear = currentDate.getFullYear();
 
-        // Sample events data (in a real app, this would come from an API)
-        const events = <?php echo json_encode($events); ?>;
-
         // Initialize calendar
         function initCalendar() {
             renderCalendar(currentMonth, currentYear);
+            addDayClickHandlers();
+            
+            // Close modal when clicking outside
+            document.addEventListener('click', (e) => {
+                const modal = document.getElementById('eventModal');
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+            
+            // Close button
+            document.getElementById('closeEvent').addEventListener('click', () => {
+                document.getElementById('eventModal').classList.remove('active');
+            });
         }
 
         // Render calendar
@@ -414,20 +701,42 @@ $events = [
                     dayElement.classList.add('today');
                 }
 
-                // Add event indicator
-                if (events[dateStr]) {
-                    const eventDot = document.createElement('span');
-                    eventDot.className = 'event-dot';
-                    eventDot.title = `${events[dateStr][0].title} - ${events[dateStr][0].time}`;
-                    eventDot.onclick = (e) => {
+                // Add event indicators to days with events
+                if (window.events[dateStr] && window.events[dateStr].length > 0) {
+                    const indicator = document.createElement('div');
+                    indicator.className = 'event-indicator';
+                    
+                    // Add a class based on event type for color coding
+                    const eventType = window.events[dateStr][0].event_type || 'other';
+                    indicator.classList.add(`event-type-${eventType}`);
+                    
+                    // Add title for hover
+                    const eventTitles = window.events[dateStr].map(e => e.title).join(', ');
+                    indicator.setAttribute('title', eventTitles);
+                    
+                    // Show number of events if more than one
+                    if (window.events[dateStr].length > 1) {
+                        const countBadge = document.createElement('span');
+                        countBadge.className = 'event-count';
+                        countBadge.textContent = window.events[dateStr].length;
+                        indicator.appendChild(countBadge);
+                    }
+                    
+                    // Add click handler to the indicator
+                    indicator.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        showEventDetails(events[dateStr]);
-                    };
-                    dayElement.appendChild(eventDot);
-
-                    // Make the whole day clickable
+                        showEventDetails(window.events[dateStr]);
+                        document.getElementById('eventModal').classList.add('active');
+                    });
+                    
+                    dayElement.appendChild(indicator);
+                    
+                    // Make the entire day clickable
                     dayElement.style.cursor = 'pointer';
-                    dayElement.onclick = () => showEventDetails(events[dateStr]);
+                    dayElement.addEventListener('click', () => {
+                        showEventDetails(window.events[dateStr]);
+                        document.getElementById('eventModal').classList.add('active');
+                    });
                 }
 
                 calendarDays.appendChild(dayElement);
@@ -456,38 +765,84 @@ $events = [
             return dayElement;
         }
 
-        // Show event details
+        // Add click event to calendar days
+        function addDayClickHandlers() {
+            const dayElements = document.querySelectorAll('.calendar-day:not(.other-month)');
+            dayElements.forEach(day => {
+                day.addEventListener('click', function() {
+                    const date = this.querySelector('.day-number').textContent;
+                    const month = currentMonth + 1;
+                    const year = currentYear;
+                    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+                    if (window.events[dateStr] && window.events[dateStr].length > 0) {
+                        showEventDetails(window.events[dateStr]);
+                        // Show the modal
+                        eventDetails.style.display = 'block';
+                    }
+                });
+            });
+        }
+
+        // Show event details in modal
         function showEventDetails(eventList) {
             const eventDetailsContent = document.querySelector('.event-details-content');
+            if (!eventDetailsContent) return;
+            
             eventDetailsContent.innerHTML = '';
 
-            if (Array.isArray(eventList) && eventList.length > 1) {
-                // Multiple events on the same day
-                eventList.forEach((event, index) => {
-                    const eventDiv = document.createElement('div');
-                    eventDiv.style.borderBottom = index < eventList.length - 1 ? '1px solid #eee' : 'none';
-                    eventDiv.style.paddingBottom = '15px';
-                    eventDiv.style.marginBottom = index < eventList.length - 1 ? '15px' : '0';
-                    eventDiv.innerHTML = `
-                        <h3>${event.title}</h3>
-                        <p><strong>Time:</strong> ${event.time}</p>
-                        <p><strong>Location:</strong> ${event.location}</p>
-                        <p><strong>Description:</strong> ${event.description}</p>
-                    `;
-                    eventDetailsContent.appendChild(eventDiv);
-                });
-            } else {
-                // Single event
-                const event = eventList[0] || eventList;
-                eventDetailsContent.innerHTML = `
-                    <h3>${event.title}</h3>
-                    <p><strong>Time:</strong> ${event.time}</p>
-                    <p><strong>Location:</strong> ${event.location}</p>
-                    <p><strong>Description:</strong> ${event.description}</p>
-                `;
-            }
+            if (Array.isArray(eventList) && eventList.length > 0) {
+                // Add close button
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'close-btn';
+                closeBtn.innerHTML = '&times;';
+                closeBtn.onclick = () => {
+                    document.getElementById('eventModal').classList.remove('active');
+                };
+                eventDetailsContent.appendChild(closeBtn);
 
-            eventDetails.style.display = 'flex';
+                // Add title
+                const title = document.createElement('h2');
+                title.textContent = eventList.length > 1 ? 'Events on this day' : 'Event Details';
+                title.style.marginTop = '0';
+                title.style.color = 'var(--primary-color)';
+                eventDetailsContent.appendChild(title);
+
+                // Add events
+                eventList.forEach((event, index) => {
+                    const eventElement = document.createElement('div');
+                    eventElement.className = `event-item event-type-${event.event_type || 'other'}`;
+                    
+                    // Format date
+                    const eventDate = new Date(event.event_date);
+                    const formattedDate = eventDate.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    eventElement.innerHTML = `
+                        <div class="event-header">
+                            <h3>${event.title}</h3>
+                            ${event.event_type ? `<span class="event-type-badge">${event.event_type.charAt(0).toUpperCase() + event.event_type.slice(1)}</span>` : ''}
+                        </div>
+                        <p><i class="far fa-calendar-alt"></i> ${formattedDate}</p>
+                        ${event.location ? `<p><i class="fas fa-map-marker-alt"></i> ${event.location}</p>` : ''}
+                        ${event.description ? `<div class="event-description">${event.description}</div>` : ''}
+                    `;
+                    
+                    eventDetailsContent.appendChild(eventElement);
+                    
+                    // Add divider between events if there are multiple
+                    if (index < eventList.length - 1) {
+                        const divider = document.createElement('hr');
+                        divider.className = 'event-divider';
+                        eventDetailsContent.appendChild(divider);
+                    }
+                });
+            }        
         }
 
         // Event Listeners
@@ -513,10 +868,11 @@ $events = [
             eventDetails.style.display = 'none';
         });
 
-        // Close modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target === eventDetails) {
-                eventDetails.style.display = 'none';
+        // Close modal when clicking outside the modal content
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('eventModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
             }
         });
 

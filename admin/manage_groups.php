@@ -85,6 +85,30 @@ $groups = [];
 $success = '';
 $error = '';
 
+// Define available categories
+$categories = [
+    'Career Development',
+    'Entrepreneurship',
+    'Technology & IT',
+    'Research & Innovation',
+    'Mentorship',
+    'Global Network',
+    'Volunteer & Community',
+    'Sports & Recreation',
+    'Arts & Culture',
+    'Health & Wellness',
+    'Finance & Investment',
+    'Education',
+    'Alumni Relations',
+    'Professional Development',
+    'Networking',
+    'Startups',
+    'Social Impact',
+    'Women in Leadership',
+    'Graduate Studies',
+    'Industry Specific'
+];
+
 // Get all interest groups with member counts
 try {
     // Check if tables exist before querying
@@ -545,17 +569,6 @@ try {
     </div>
 
     <div class="dashboard-container">
-        <?php if (isset($success)): ?>
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($error)): ?>
-            <div class="alert alert-error">
-                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
 
         <!-- Add Group Form -->
         <div class="form-container">

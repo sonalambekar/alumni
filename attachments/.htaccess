@@ -1,13 +1,26 @@
 # Allow access to image files
-<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
-    Order Allow,Deny
-    Allow from all
-</FilesMatch>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header unset ETag
+        FileETag None
+    </FilesMatch>
+</IfModule>
+
+# Allow access to all files
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
 
 # Prevent directory listing
 Options -Indexes
 
-# Enable URL rewriting if needed
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
 <IfModule mod_rewrite.c>
     RewriteEngine On
     # Allow direct access to files that exist

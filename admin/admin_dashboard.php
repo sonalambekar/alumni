@@ -556,15 +556,7 @@ try {
                 </a>
             </div>
 
-            <div class="management-card">
-                <h3><i class="fas fa-images"></i> Photo Galleries</h3>
-                <p>Upload and organize photos from alumni events and activities.</p>
-                <a href="manage_galleries.php" class="management-btn">
-                    <i class="fas fa-cog"></i> Manage
-                </a>
-            </div>
-
-            <div class="management-card">
+<div class="management-card">
                 <h3><i class="fas fa-users-cog"></i> Interest Groups</h3>
                 <p>Create and manage special interest groups for alumni networking.</p>
                 <a href="manage_groups.php" class="management-btn">
@@ -580,34 +572,39 @@ try {
                 </a>
             </div>
 
+<div class="management-card">
+                <h3><i class="fas fa-chalkboard-teacher"></i> Manage Mentors</h3>
+                <p>Review and approve mentor applications from alumni members.</p>
+                <a href="manage_mentors.php" class="management-btn">
+                    <i class="fas fa-cog"></i> Manage
+                </a>
+            </div>
+
             <div class="management-card">
-                <h3><i class="fas fa-database"></i> Database Setup</h3>
-                <p>Import database schema and sample data for the alumni system.</p>
-                <a href="../setup_database.php" class="management-btn">
-                    <i class="fas fa-download"></i> Setup
+                <h3><i class="fas fa-map-marker-alt"></i> Chapters</h3>
+                <p>Manage regional and special interest chapters for alumni communities.</p>
+                <a href="chapters.php" class="management-btn">
+                    <i class="fas fa-cog"></i> Manage
+                </a>
+            </div>
+
+            <div class="management-card">
+                <h3><i class="fas fa-medal"></i> Institute Medals</h3>
+                <p>Award and manage medals for outstanding alumni achievements.</p>
+                <a href="manage_medals.php" class="management-btn">
+                    <i class="fas fa-cog"></i> Manage
+                </a>
+            </div>
+
+            <div class="management-card">
+                <h3><i class="fas fa-people-arrows"></i> Map Mentors</h3>
+                <p>Assign and manage mentor-student relationships and pairings.</p>
+                <a href="map_mentors.php" class="management-btn">
+                    <i class="fas fa-cog"></i> Manage
                 </a>
             </div>
         </div>
 
-        <!-- Recent Activity -->
-        <div class="activity-section">
-            <h2 class="activity-title">Recent Activity</h2>
-            <ul class="activity-list">
-                <?php if (isset($recentActivity) && !empty($recentActivity)): ?>
-                    <?php foreach ($recentActivity as $activity): ?>
-                        <li class="activity-item">
-                            <span class="activity-type"><?php echo htmlspecialchars($activity['type']); ?></span>
-                            <span class="activity-title-text"><?php echo htmlspecialchars($activity['title']); ?></span>
-                            <span class="activity-date"><?php echo date('M j, Y', strtotime($activity['created_at'])); ?></span>
-                        </li>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <li class="activity-item">
-                        <span class="activity-title-text">No recent activity</span>
-                    </li>
-                <?php endif; ?>
-            </ul>
-        </div>
     </div>
 </body>
 </html>

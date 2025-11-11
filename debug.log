@@ -1,0 +1,30 @@
+[2025-11-03 05:09:13] Join group script started
+[2025-11-03 05:09:13] Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'current_members' in 'field list' in C:\xampp_ss\htdocs\alumni\join_group.php on line 42
+[2025-11-03 05:09:13] Backtrace: Array
+(
+)
+
+[2025-11-03 05:09:13] SQL Error: Unknown column 'current_members' in 'field list'
+[2025-11-03 05:09:23] Join group script started
+[2025-11-03 05:09:23] Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'current_members' in 'field list' in C:\xampp_ss\htdocs\alumni\join_group.php on line 42
+[2025-11-03 05:09:23] Backtrace: Array
+(
+)
+
+[2025-11-03 05:09:23] SQL Error: Unknown column 'current_members' in 'field list'
+[2025-11-03 05:09:58] Join group script started
+[2025-11-03 05:09:58] Inserted into group_members. Group ID: 7, User ID: 19, Result: success
+[2025-11-03 05:09:58] Added user 19 to group 7
+[2025-11-03 05:09:58] Transaction committed successfully
+[2025-11-03 05:23:20] Join group script started
+[2025-11-03 05:23:20] Inserted into group_members. Group ID: 5, User ID: 19, Result: success
+[2025-11-03 05:23:20] Added user 19 to group 5
+[2025-11-03 05:23:20] Transaction committed successfully
+[2025-11-07 07:12:46] Join group script started
+[2025-11-07 07:12:46] Inserted into group_members. Group ID: 4, User ID: 19, Result: success
+[2025-11-07 07:12:46] Added user 19 to group 4
+[2025-11-07 07:12:46] Transaction committed successfully
+[2025-11-07 07:13:02] Join group script started
+[2025-11-07 07:13:02] Inserted into group_members. Group ID: 1, User ID: 19, Result: success
+[2025-11-07 07:13:02] Added user 19 to group 1
+[2025-11-07 07:13:02] Transaction committed successfully

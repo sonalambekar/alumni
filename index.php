@@ -34,6 +34,13 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
     <link rel="stylesheet" href="assets/css/style.css">
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <!-- Map Initialization -->
+    <script src="assets/js/map-init.js" defer></script>
     <style>
         /* Hover effects for feature cards */
         .feature-card:hover {
@@ -58,23 +65,239 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                 grid-template-columns: repeat(2, 1fr) !important;
             }
         }
+        
+        .groups-grid {
+            display: flex;
+            overflow-x: auto;
+            gap: 25px;
+            padding: 20px 0;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+            scroll-behavior: smooth;
+        }
+        
+        .groups-grid::-webkit-scrollbar {
+            display: none; /* Hide scrollbar for Chrome, Safari and Opera */
+        }
+        
+        .groups-grid .group-card {
+            flex: 0 0 300px;
+            margin-bottom: 10px;
+        }
     </style>
     <!-- Leaflet CSS (Free OpenStreetMap library) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin=""/>
+    <style>
+        /* Map container styles */
+        .map-section {
+            padding: 40px 0;
+            background-color: #f9f9f9;
+        }
+        .map-container {
+            width: 100%;
+            height: 600px;  /* Increased height for better visibility */
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            max-width: 1200px;
+            position: relative;
+            border: 1px solid #e0e0e0;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+            min-height: 600px;  /* Ensure minimum height */
+            background-color: #e8f4f8;  /* Light blue background when loading */
+        }
+        /* Add loading indicator */
+        .map-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255,255,255,0.9);
+            z-index: 1000;
+            font-size: 1.2rem;
+            color: #333;
+        }
+    </style>
 </head>
 <body>
     <?php
     // Note: User authentication is handled by the login requirement at the top
+    
+    // Display success/error messages if any
+    if (isset($_SESSION['success']) || isset($_SESSION['error'])) {
+        echo '<div class="message-container" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 80%; max-width: 600px;">';
+        if (isset($_SESSION['success'])) {
+            echo '<div class="alert alert-success" style="background-color: #d4edda; color: #155724; padding: 15px; border: 1px solid #c3e6cb; border-radius: 4px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">';
+            echo '<span>' . htmlspecialchars($_SESSION['success']) . '</span>';
+            echo '<button type="button" class="close-message" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #155724;">&times;</button>';
+            echo '</div>';
+            unset($_SESSION['success']);
+        }
+        if (isset($_SESSION['error'])) {
+            echo '<div class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 15px; border: 1px solid #f5c6cb; border-radius: 4px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">';
+            echo '<span>' . htmlspecialchars($_SESSION['error']) . '</span>';
+            echo '<button type="button" class="close-message" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #721c24;">&times;</button>';
+            echo '</div>';
+            unset($_SESSION['error']);
+        }
+        echo '</div>';
+        
+        // Add JavaScript to handle message dismissal
+        echo '<script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const closeButtons = document.querySelectorAll(".close-message");
+            closeButtons.forEach(button => {
+                button.addEventListener("click", function() {
+                    this.closest(".alert").style.display = "none";
+                });
+            });
+            
+            // Auto-hide messages after 5 seconds
+            setTimeout(() => {
+                const messages = document.querySelectorAll(".alert");
+                messages.forEach(msg => {
+                    msg.style.transition = "opacity 0.5s";
+                    msg.style.opacity = "0";
+                    setTimeout(() => {
+                        msg.style.display = "none";
+                    }, 500);
+                });
+            }, 5000);
+        });
+        </script>';
+    }
     ?>
 
-    <!-- Fixed Logout Button -->
-    <div class="fixed-logout" style="position: fixed; top: 20px; right: 80px; z-index: 1000; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    <!-- Fixed Action Buttons -->
+    <div class="fixed-actions" style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px; background: white; padding: 5px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <button id="locationBtn" style="background: #5b1f1f; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.3s ease;" onmouseover="this.style.background='#4a1919'" onmouseout="this.style.background='#5b1f1f'">
+            <i class="fas fa-map-marker-alt"></i> Share Location
+        </button>
         <a href="/alumni/logout.php" style="background: #5b1f1f; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background 0.3s ease;" onmouseover="this.style.background='#4a1919'" onmouseout="this.style.background='#5b1f1f'">
             <i class="fas fa-sign-out-alt"></i> Logout
         </a>
     </div>
+    
+    <script>
+    document.getElementById('locationBtn').addEventListener('click', function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+        
+        // Show loading state
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting location...';
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const { latitude, longitude } = position.coords;
+                    
+                    // Update button text
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                    
+                    // Send location to server
+                    fetch('save_location.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            btn.innerHTML = '<i class="fas fa-check-circle"></i> Location Saved';
+                            setTimeout(() => {
+                                btn.innerHTML = originalText;
+                                btn.disabled = false;
+                            }, 2000);
+                            
+                            console.log('Location saved:', data);
+                            // Show a more user-friendly notification
+                            const notification = document.createElement('div');
+                            notification.className = 'location-notification';
+                            
+                            // Safely format coordinates
+                            const lat = data.latitude || position.coords.latitude;
+                            const lng = data.longitude || position.coords.longitude;
+                            const formattedLat = typeof lat === 'number' ? lat.toFixed(4) : 'N/A';
+                            const formattedLng = typeof lng === 'number' ? lng.toFixed(4) : 'N/A';
+                            
+                            notification.innerHTML = `
+                                <i class="fas fa-check-circle"></i>
+                                <span>Location updated successfully!</span>
+                                <small>(${formattedLat}, ${formattedLng})</small>
+                            `;
+                            document.body.appendChild(notification);
+                            
+                            // Remove notification after 3 seconds
+                            setTimeout(() => {
+                                notification.style.opacity = '0';
+                                setTimeout(() => notification.remove(), 300);
+                            }, 5000);
+                        } else {
+                            throw new Error(data.message || 'Failed to save location');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+                        setTimeout(() => {
+                            btn.innerHTML = originalText;
+                            btn.disabled = false;
+                        }, 2000);
+                        
+                        alert(`Error: ${error.message || 'Failed to save location. Please try again.'}`);
+                    });
+                },
+                function(error) {
+                    let errorMessage = 'Error getting location: ';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location access was denied. Please enable location services and try again.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location information is currently unavailable. Please check your connection and try again.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'The request to get your location timed out. Please try again.';
+                            break;
+                        default:
+                            errorMessage = 'An unknown error occurred while getting your location.';
+                    }
+                    
+                    btn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }, 2000);
+                    
+                    alert(errorMessage);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,  // 10 seconds
+                    maximumAge: 0     // Force fresh location
+                }
+            );
+        } else {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            alert('Geolocation is not supported by your browser. Please try a different browser.');
+        }
+    });
+    </script>
 
     <?php include 'sidebar.php'; ?>
 
@@ -85,8 +308,8 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                 <img src="assets/images/Generated Image October 17, 2025 - 11_10AM.png" alt="Alumni Event">
             </div>
             <div class="hero-content">
-                <h1>About Our <span>Alumni Network</span></h1>
-                <p>Welcome to the Alumni Connect platform, where memories meet opportunities. Our vibrant community brings together graduates from across the globe, fostering connections that transcend time and distance.</p>
+                <h1>Welcome to <span>Gems of GM</span></h1>
+                <p>Welcome to the Gems of GM platform, where memories meet opportunities. Our vibrant community brings together graduates from across the globe, fostering connections that transcend time and distance.</p>
                 <p>Whether you're looking to reconnect with old friends, mentor the next generation, or explore new career opportunities, our platform provides the tools and resources to help you stay engaged with your alma mater.</p>
                 <p>Join thousands of alumni who are making a difference in their communities and industries worldwide.</p>
             </div>
@@ -123,37 +346,36 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
             <div class="alumni-grid">
                 <div class="alumni-card" onclick="location.href='pages/directory.php'">
                     <div class="alumni-avatar">
-                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop" alt="Alumni 1">
+                        <img src="assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2010.09.45_92cc285f.jpg" alt="Alumni Achievement 1">
                     </div>
-                    <div class="alumni-name">John Anderson</div>
+                    <div class="alumni-name">Pavan Varahad V</div>
                 </div>
                 <div class="alumni-card" onclick="location.href='pages/directory.php'">
                     <div class="alumni-avatar">
-                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop" alt="Alumni 2">
+                        <img src="assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2014.40.27_3afb5fa0.jpg" alt="Alumni Achievement 2">
                     </div>
-                    <div class="alumni-name">Sarah Mitchell</div>
+                    <div class="alumni-name">Khushi Patil</div>
                 </div>
                 <div class="alumni-card" onclick="location.href='pages/directory.php'">
                     <div class="alumni-avatar">
-                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop" alt="Alumni 3">
+                        <img src="assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2014.40.47_5aec4de6.jpg" alt="Alumni Achievement 3">
                     </div>
-                    <div class="alumni-name">Michael Chen</div>
+                    <div class="alumni-name">Md Faizan Khan</div>
                 </div>
                 <div class="alumni-card" onclick="location.href='pages/directory.php'">
                     <div class="alumni-avatar">
-                        <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop" alt="Alumni 4">
+                        <img src="assets/images/medals/Abhishek%20Belagavi.png" alt="Alumni Achievement 4">
                     </div>
-                    <div class="alumni-name">Emily Rodriguez</div>
+                    <div class="alumni-name">Abhishek Belagavi</div>
                 </div>
                 <div class="alumni-card" onclick="location.href='pages/directory.php'">
                     <div class="alumni-avatar">
-                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop" alt="Alumni 5">
+                        <img src="assets/images/medals/Asrar%20S.%20B.png" alt="Alumni Achievement 5">
                     </div>
-                    <div class="alumni-name">David Thompson</div>
+                    <div class="alumni-name">Asrar S. B</div>
                 </div>
             </div>
         </section>
-
 
         <!-- Alumni Groups Section -->
         <section class="alumni-groups">
@@ -162,72 +384,51 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                 <p>Connect with like-minded alumni through our special interest groups</p>
             </div>
             
-            <div class="groups-grid">
-                <div class="group-card">
-                    <div class="group-image">
-                        <img src="https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&h=400&fit=crop" alt="Entrepreneurs">
-                    </div>
-                    <div class="group-content">
-                        <h3>Entrepreneurs</h3>
-                        <p>A dynamic community of alumni who have ventured into entrepreneurship, sharing insights, challenges, and success stories.</p>
-                        <button class="btn">Join Group</button>
-                    </div>
-                </div>
+            <div class="groups-scroll-container" style="position: relative;">
+                <div class="groups-grid">
+                <?php
+                // Include database configuration
+                require_once 'includes/db_config.php';
                 
-                <div class="group-card">
-                    <div class="group-image">
-                        <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop" alt="Innovators">
+                try {
+                    // Fetch all active interest groups
+                    $stmt = $pdo->query("
+                        SELECT * FROM interest_groups 
+                        WHERE is_active = 1 
+                        ORDER BY created_at DESC
+                    ");
+                    $groups = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    // Default image if group_image is not set
+                    $defaultImages = [
+                        'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&h=400&fit=crop',
+                        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop',
+                        'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=600&h=400&fit=crop'
+                    ];
+                    $imageIndex = 0;
+                    
+                    foreach ($groups as $group):
+                        $groupImage = !empty($group['group_image']) ? $group['group_image'] : $defaultImages[$imageIndex % count($defaultImages)];
+                        $imageIndex++;
+                ?>
+                    <div class="group-card">
+                        <div class="group-image">
+                            <img src="<?php echo htmlspecialchars($groupImage); ?>" alt="<?php echo htmlspecialchars($group['name']); ?>">
+                        </div>
+                        <div class="group-content">
+                            <h3><?php echo htmlspecialchars($group['name']); ?></h3>
+                            <p><?php echo htmlspecialchars($group['description']); ?></p>
+                            <button class="btn" onclick="event.stopPropagation(); showGroupMembers(<?php echo $group['id']; ?>, '<?php echo htmlspecialchars(addslashes($group['name'])); ?>')">View Members</button>
+                        </div>
                     </div>
-                    <div class="group-content">
-                        <h3>Innovators</h3>
-                        <p>Connect with alumni driving innovation in technology, science, and creative industries across the globe.</p>
-                        <button class="btn">Join Group</button>
-                    </div>
-                </div>
-                
-                <div class="group-card">
-                    <div class="group-image">
-                        <img src="https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=600&h=400&fit=crop" alt="Social Impact">
-                    </div>
-                    <div class="group-content">
-                        <h3>Social Impact</h3>
-                        <p>Join alumni dedicated to making a difference through social entrepreneurship, NGOs, and community development.</p>
-                        <button class="btn">Join Group</button>
-                    </div>
-                </div>
-                
-                <div class="group-card">
-                    <div class="group-image">
-                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&h=400&fit=crop" alt="Women Leaders">
-                    </div>
-                    <div class="group-content">
-                        <h3>Women Leaders</h3>
-                        <p>Empowering women alumni through mentorship, networking, and leadership development opportunities.</p>
-                        <button class="btn">Join Group</button>
-                    </div>
-                </div>
-
-                <div class="group-card">
-                    <div class="group-image">
-                        <img src="https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=600&h=400&fit=crop" alt="Technology & AI">
-                    </div>
-                    <div class="group-content">
-                        <h3>Technology & AI</h3>
-                        <p>Connect with alumni at the forefront of artificial intelligence, machine learning, and emerging technologies shaping the future.</p>
-                        <button class="btn">Join Group</button>
-                    </div>
-                </div>
-
-                <div class="group-card">
-                    <div class="group-image">
-                        <img src="https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=600&h=400&fit=crop" alt="Arts & Culture">
-                    </div>
-                    <div class="group-content">
-                        <h3>Arts & Culture</h3>
-                        <p>Join creative alumni in literature, visual arts, music, theater, and cultural preservation initiatives worldwide.</p>
-                        <button class="btn">Join Group</button>
-                    </div>
-                </div>
+                <?php 
+                    endforeach; 
+                } catch (PDOException $e) {
+                    // If there's an error, show a message but don't break the page
+                    echo '<!-- Error loading groups: ' . htmlspecialchars($e->getMessage()) . ' -->';
+                    // You might want to log this error in a real application
+                }
+                ?>
             </div>
         </section>
 
@@ -291,6 +492,14 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
             </div>
             
             <div class="map-container">
+                <div class="map-loading">
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; margin-bottom: 10px;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <p>Loading map...</p>
+                    </div>
+                </div>
                 <div id="map"></div>
             </div>
         </section>
@@ -320,14 +529,14 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                         </div>
 
                         <!-- Internships Card -->
-                        <div class="service-card" style="flex: 0 0 300px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="window.location.href='pages/internships.php'" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.15)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.08)';">
+                        <div class="service-card" style="flex: 0 0 300px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="window.location.href='pages/jobs.php'" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.15)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.08)';">
                             <div class="card-icon" style="background-color: #e8f5e9; padding: 25px; text-align: center;">
                                 <i class="fas fa-briefcase" style="font-size: 2.5rem; color: #43a047;"></i>
                             </div>
                             <div class="card-content" style="padding: 25px;">
                                 <h3 style="color: #333; margin-bottom: 15px; font-size: 1.4rem;">Internships</h3>
                                 <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">Discover exciting internship opportunities from our network of industry partners.</p>
-                                <a href="pages/internships.php" class="card-link" style="color: #43a047; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                <a href="pages/jobs.php" class="card-link" style="color: #43a047; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
                                     Browse internships <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
                                 </a>
                             </div>
@@ -368,8 +577,8 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                             </div>
                             <div class="card-content" style="padding: 25px;">
                                 <h3 style="color: #333; margin-bottom: 15px; font-size: 1.4rem;">Institution Scholarship</h3>
-                                <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">Learn about scholarship opportunities for current and prospective students.</p>
-                                <a href="#" class="card-link" style="color: #2e7d32; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">Support the next generation of students by contributing to our scholarship fund.</p>
+                                <a href="/alumni/pages/institute_scholarship.php" class="card-link" style="color: #2e7d32; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
                                     Explore scholarships <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
                                 </a>
                             </div>
@@ -383,8 +592,8 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                             <div class="card-content" style="padding: 25px;">
                                 <h3 style="color: #333; margin-bottom: 15px; font-size: 1.4rem;">Institute Medal</h3>
                                 <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">Recognizing outstanding achievements and contributions of our alumni community.</p>
-                                <a href="#" class="card-link" style="color: #ff8f00; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
-                                    Learn more <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
+                                <a href="pages/institute_medal.php" class="card-link" style="color: #ff8f00; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                    View Recipients <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
                                 </a>
                             </div>
                         </div>
@@ -426,6 +635,72 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                 }
             </style>
         </section>
+
+        <!-- Group Members Modal -->
+        <div id="groupMembersModal" class="group-members-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; overflow-y: auto; padding: 20px;">
+            <div class="group-members-content" style="background: white; margin: 50px auto; max-width: 800px; border-radius: 10px; box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3); overflow: hidden; position: relative;">
+                <div class="group-members-header" style="background: #5b1f1f; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 id="groupModalTitle" style="margin: 0; font-size: 1.2rem;">Group Members</h3>
+                    <button class="close-modal" onclick="closeGroupModal()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px 10px;">&times;</button>
+                </div>
+                <div class="group-members-body" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+                    <div id="membersLoading" class="loading-members" style="text-align: center; padding: 20px; color: #666;">
+                        <p>Loading members...</p>
+                    </div>
+                    <div id="membersList" class="member-list" style="display: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                        <!-- Members will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+            .group-card {
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            
+            .member-card {
+                display: flex;
+                align-items: center;
+                padding: 10px;
+                border: 1px solid #eee;
+                border-radius: 8px;
+                transition: all 0.3s ease;
+            }
+            
+            .member-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            }
+            
+            .member-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                object-fit: cover;
+                margin-right: 12px;
+            }
+            
+            .member-info h4 {
+                margin: 0;
+                font-size: 0.95rem;
+                color: #333;
+            }
+            
+            .member-info p {
+                margin: 3px 0 0;
+                font-size: 0.8rem;
+                color: #777;
+            }
+            
+            .no-members {
+                text-align: center;
+                padding: 20px;
+                color: #666;
+                grid-column: 1 / -1;
+            }
+        </style>
 
         <!-- Footer -->
         <footer class="footer">
@@ -491,25 +766,233 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
         </footer>
     </div>
 
+    <script>
+        // Group members modal functionality
+        function showGroupMembers(groupId, groupName) {
+            const modal = document.getElementById('groupMembersModal');
+            const modalTitle = document.getElementById('groupModalTitle');
+            const membersList = document.getElementById('membersList');
+            const membersLoading = document.getElementById('membersLoading');
+            
+            // Set group name in modal title
+            modalTitle.textContent = groupName + ' - Members';
+            
+            // Show loading state
+            membersLoading.style.display = 'block';
+            membersList.style.display = 'none';
+            
+            // Clear previous members
+            membersList.innerHTML = '';
+            
+            // Show modal
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            
+            // Fetch group members
+            fetch(`/alumni/api/get_group_members.php?group_id=${groupId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Hide loading
+                        membersLoading.style.display = 'none';
+                        
+                        if (data.members.length > 0) {
+                            // Add members to the list
+                            data.members.forEach(member => {
+                                const memberCard = document.createElement('div');
+                                memberCard.className = 'member-card';
+                                memberCard.innerHTML = `
+                                    <div class="member-avatar" style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; border: 2px solid #5b1f1f;">
+                                        <img src="${member.profile_picture}" 
+                                             alt="${member.name || 'Alumni Member'}" 
+                                             style="width: 100%; height: 100%; object-fit: cover;"
+                                             onerror="this.onerror=null; this.style.display='none'; this.parentNode.innerHTML='<div style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background-color:#5b1f1f;color:white;font-weight:bold;font-size:24px;\'>' + '${member.name ? member.name.charAt(0).toUpperCase() : 'A'}' + '</div>'">
+                                    </div>
+                                    <div class="member-info" style="flex: 1; margin-left: 15px;">
+                                        <h4 style="margin: 0 0 5px 0; color: #333;">${member.name || 'Alumni Member'}</h4>
+                                        ${member.usn ? `<p style="margin: 0; color: #666; font-size: 0.9em;">${member.usn}</p>` : ''}
+                                        ${member.email ? `<p style="margin: 5px 0 0 0; color: #666; font-size: 0.9em;"><i class="fas fa-envelope" style="margin-right: 5px; color: #5b1f1f;"></i>${member.email}</p>` : ''}
+                                `;
+                                membersList.appendChild(memberCard);
+                            });
+                        } else {
+                            membersList.innerHTML = `
+                                <div class="no-members">
+                                    <p>No members found in this group.</p>
+                                </div>
+                            `;
+                        }
+                        
+                        // Show members list
+                        membersList.style.display = 'grid';
+                    } else {
+                        throw new Error(data.error || 'Failed to load group members');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    membersLoading.innerHTML = `
+                        <p style="color: #dc3545;">Error loading members: ${error.message}</p>
+                        <button onclick="showGroupMembers(${groupId}, '${groupName.replace(/'/g, "\\'")}')" 
+                                style="margin-top: 10px; padding: 5px 10px; background: #5b1f1f; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            Retry
+                        </button>
+                    `;
+                });
+        }
+        
+        function closeGroupModal() {
+            const modal = document.getElementById('groupMembersModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Close modal when clicking outside the content
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('groupMembersModal');
+            if (event.target === modal) {
+                closeGroupModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            const modal = document.getElementById('groupMembersModal');
+            if (event.key === 'Escape' && modal.style.display === 'block') {
+                closeGroupModal();
+            }
+        });
+    </script>
+    
     <script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
     <script src="assets/js/script.js?v=2"></script>
 
     <style>
-        /* Mobile responsive styles for fixed logout button */
+        /* User location markers */
+        .user-marker {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #5b1f1f;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .user-marker img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* User popup styles */
+        .user-location-popup .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .user-popup {
+            width: 100%;
+        }
+        
+        .user-popup-header {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .user-popup-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+            border: 2px solid #5b1f1f;
+        }
+        
+        .user-popup-info h4 {
+            margin: 0 0 4px 0;
+            color: #333;
+            font-size: 15px;
+        }
+        
+        .user-popup-info .usn {
+            margin: 0;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        /* Location notification styles */
+        .location-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            opacity: 0;
+            animation: slideIn 0.3s ease-out forwards;
+            max-width: 350px;
+        }
+        
+        .location-notification i {
+            font-size: 20px;
+        }
+        
+        .location-notification span {
+            flex-grow: 1;
+        }
+        
+        .location-notification small {
+            display: block;
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Mobile responsive styles for fixed actions */
         @media (max-width: 768px) {
-            .fixed-logout {
+            .fixed-actions {
                 top: 80px !important; /* Below sidebar toggle */
                 right: 15px !important;
                 left: 15px !important;
-                display: flex !important;
                 justify-content: flex-end !important;
+                flex-wrap: wrap;
+                gap: 8px !important;
+                padding: 8px !important;
             }
 
-            .fixed-logout a {
-                padding: 8px 14px !important;
+            .fixed-actions a,
+            .fixed-actions button {
+                padding: 8px 12px !important;
                 font-size: 13px !important;
+                white-space: nowrap;
+            }
+            
+            .fixed-actions i {
+                margin-right: 4px;
             }
         }
     </style>

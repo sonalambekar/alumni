@@ -68,7 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!empty($id)) {
                 try {
-                    $stmt = $pdo->delete("DELETE FROM noticeboard WHERE id = ?", [$id]);
+                    $stmt = $pdo->prepare("DELETE FROM noticeboard WHERE id = ?");
+                    $stmt->execute([$id]);
                     $success = "Notice deleted successfully!";
                 } catch(PDOException $e) {
                     $error = "Error deleting notice: " . $e->getMessage();

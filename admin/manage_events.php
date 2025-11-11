@@ -206,6 +206,79 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Events - Admin Dashboard</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <!-- FullCalendar CSS -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    <style>
+        /* Calendar container */
+        #calendar {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        /* Event dot styling */
+        .fc-daygrid-day-events {
+            min-height: 0 !important;
+        }
+        
+        .fc-event {
+            cursor: pointer;
+            border: none !important;
+            background: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        .fc-event-time, .fc-event-title {
+            display: none;
+        }
+        
+        .fc-daygrid-event-dot {
+            margin: 0 auto !important;
+            border-color: var(--primary-color) !important;
+            width: 8px !important;
+            height: 8px !important;
+            border-radius: 50% !important;
+        }
+        
+        .fc-day-today {
+            background-color: rgba(236, 195, 92, 0.1) !important;
+        }
+        
+        /* Popup styling */
+        .event-popup {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-width: 300px;
+        }
+        
+        .event-popup h4 {
+            margin: 0 0 10px 0;
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+        
+        .event-popup p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .event-popup .close-popup {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            color: #999;
+        }
+    </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -717,6 +790,17 @@ try {
         </div>
     </div>
 
+    <!-- Add popup container -->
+    <div id="eventPopup" class="event-popup">
+        <span class="close-popup">&times;</span>
+        <h4 id="popupTitle"></h4>
+        <p id="popupDate"></p>
+        <p id="popupLocation"></p>
+        <p id="popupDescription"></p>
+    </div>
+
+    <!-- FullCalendar JS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script>
         function editEvent(eventId) {
             // Find the event data and populate the modal
@@ -740,6 +824,106 @@ try {
         function closeEditModal() {
             document.getElementById('editModal').classList.remove('show');
         }
+        
+        // Initialize calendar when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get events data from PHP
+            const events = <?php 
+                $eventsData = [];
+                foreach ($events as $event) {
+                    $eventsData[] = [
+                        'id' => $event['id'],
+                        'title' => $event['title'],
+                        'start' => $event['event_date'],
+                        'end' => $event['end_date'],
+                        'description' => $event['description'],
+                        'location' => $event['location'],
+                        'className' => 'event-dot',
+                        'display' => 'background'
+                    ];
+                }
+                echo json_encode($eventsData);
+            ?>;
+            
+            // Initialize calendar
+            const calendarEl = document.createElement('div');
+            calendarEl.id = 'calendar';
+            document.querySelector('.dashboard-container').insertBefore(calendarEl, document.querySelector('.events-table'));
+            
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                events: events,
+                eventClick: function(info) {
+                    const popup = document.getElementById('eventPopup');
+                    const event = info.event;
+                    
+                    // Set popup content
+                    document.getElementById('popupTitle').textContent = event.title;
+                    document.getElementById('popupDate').innerHTML = `<i class="far fa-calendar-alt"></i> ` + 
+                        event.start.toLocaleString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        
+                    if (event.end) {
+                        document.getElementById('popupDate').innerHTML += ' - ' + 
+                            event.end.toLocaleString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                    }
+                    
+                    document.getElementById('popupLocation').innerHTML = event.extendedProps.location ? 
+                        `<i class="fas fa-map-marker-alt"></i> ` + event.extendedProps.location : '';
+                    document.getElementById('popupDescription').textContent = event.extendedProps.description || '';
+                    
+                    // Position and show popup
+                    popup.style.display = 'block';
+                    const rect = info.el.getBoundingClientRect();
+                    popup.style.top = (rect.top + window.scrollY + 20) + 'px';
+                    popup.style.left = (rect.left + window.scrollX - 150) + 'px';
+                    
+                    // Close popup when clicking outside
+                    setTimeout(() => {
+                        const closePopup = (e) => {
+                            if (!popup.contains(e.target) && e.target !== info.el) {
+                                popup.style.display = 'none';
+                                document.removeEventListener('click', closePopup);
+                            }
+                        };
+                        document.addEventListener('click', closePopup);
+                    }, 100);
+                },
+                eventContent: function(arg) {
+                    // Only show dot for the event
+                    return { html: '<div class="fc-event-dot"></div>' };
+                },
+                eventDidMount: function(arg) {
+                    // Add tooltip
+                    if (arg.event.extendedProps.description) {
+                        arg.el.title = arg.event.extendedProps.description;
+                    }
+                }
+            });
+            
+            calendar.render();
+            
+            // Close popup when clicking the close button
+            document.querySelector('.close-popup').addEventListener('click', function() {
+                document.getElementById('eventPopup').style.display = 'none';
+            });
+        });
     </script>
 
     <!-- Edit Modal -->

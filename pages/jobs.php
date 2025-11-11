@@ -77,8 +77,8 @@ if (isset($_GET['success'])) {
 // Fetch jobs with filters
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $location = isset($_GET['location']) ? trim($_GET['location']) : '';
-$jobType = isset($_GET['job_type']) ? $_GET['job_type'] : '';
-$experience = isset($_GET['experience']) ? $_GET['experience'] : '';
+$jobType = isset($_GET['job_type']) ? trim($_GET['job_type']) : '';
+$experience = isset($_GET['experience']) ? trim($_GET['experience']) : '';
 
 $where = [];
 $params = [];
@@ -99,6 +99,7 @@ if (!empty($location)) {
 if (!empty($jobType)) {
     $where[] = "j.job_type = ?";
     $params[] = $jobType;
+    error_log("Job Type Filter: " . $jobType); // Debug log
 }
 
 if (!empty($experience)) {
@@ -110,6 +111,10 @@ $sql = "SELECT j.*, u.name as posted_by_name
         FROM jobs j 
         LEFT JOIN users u ON j.posted_by = u.id 
         WHERE j.is_active = 1 AND j.is_approved = 1";
+
+// Debug log the SQL query and parameters
+error_log("SQL Query: " . $sql);
+error_log("Parameters: " . print_r($params, true));
 
 if (!empty($where)) {
     $sql .= " AND " . implode(" AND ", $where);
@@ -786,7 +791,7 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <!-- Search and Filter Section -->
         <div class="container">
-            <form class="search-container" method="GET" action="">
+            <form class="search-container" method="GET" action="jobs.php">
                 <div class="search-bar">
                     <div class="search-input-wrapper">
                         <i class="fas fa-search search-icon"></i>

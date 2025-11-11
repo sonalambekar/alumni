@@ -71,7 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!empty($id)) {
                 try {
-                    $stmt = $pdo->delete("DELETE FROM news WHERE id = ?", [$id]);
+                    $stmt = $pdo->prepare("DELETE FROM news WHERE id = ?");
+                    $stmt->execute([$id]);
                     $success = "News article deleted successfully!";
                 } catch(PDOException $e) {
                     $error = "Error deleting news article: " . $e->getMessage();

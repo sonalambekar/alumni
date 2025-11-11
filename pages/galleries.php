@@ -1,3 +1,38 @@
+<?php
+// Start session and include database configuration
+session_start();
+require_once '../includes/db_config.php';
+
+// Function to get gallery image count
+function getGalleryImageCount($pdo, $galleryId) {
+    $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM gallery_images WHERE gallery_id = ?");
+    $stmt->execute([$galleryId]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result ? $result['count'] : 0;
+}
+
+// Fetch all active galleries with their first image as cover
+try {
+    $stmt = $pdo->query("
+        SELECT 
+            g.*,
+            (SELECT cover_image FROM galleries WHERE id = g.id LIMIT 1) as cover_image_path,
+            (SELECT COUNT(*) FROM gallery_images WHERE gallery_id = g.id) as image_count
+        FROM galleries g
+        WHERE g.is_active = 1
+        ORDER BY g.created_at DESC
+    ");
+    $galleries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Debug output (remove after testing)
+    error_log("Fetched galleries: " . print_r($galleries, true));
+    
+} catch (PDOException $e) {
+    $error = "Error fetching galleries: " . $e->getMessage();
+    $galleries = [];
+    error_log($error);
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -98,6 +133,18 @@
         .gallery-info p {
             font-size: 0.8rem;
             opacity: 0.9;
+            margin: 2px 0;
+        }
+        
+        .gallery-desc {
+            font-size: 0.75rem !important;
+            opacity: 0.8 !important;
+            margin-top: 8px !important;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* Different sizes for masonry effect */
@@ -159,45 +206,45 @@
             <p class="gallery-subtitle">Relive memorable moments from alumni events and gatherings</p>
 
             <div class="masonry-gallery">
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=600&fit=crop" alt="Annual Reunion 2024">
-                    <div class="gallery-overlay">
-                        <div class="gallery-info">
-                            <h3>Annual Reunion 2024</h3>
-                            <p>December 15, 2024 • 120 Photos</p>
+                <?php if (!empty($galleries)): ?>
+                    <?php foreach ($galleries as $gallery): ?>
+                        <?php 
+// Get the first image as cover if no cover image is set
+                            $coverImage = '';
+                            if (!empty($gallery['cover_image_path'])) {
+                                $coverImage = '../' . ltrim($gallery['cover_image_path'], '/');
+                            } elseif (!empty($gallery['cover_image'])) {
+                                $coverImage = '../' . ltrim($gallery['cover_image'], '/');
+                            }
+                            
+                            // Check if the file exists, if not use placeholder
+                            if (!empty($coverImage) && !file_exists(ltrim($coverImage, '/')) && !file_exists($coverImage)) {
+                                error_log("Image not found: " . $coverImage);
+                                $coverImage = 'https://via.placeholder.com/800x600?text=No+Image';
+                            } elseif (empty($coverImage)) {
+                                $coverImage = 'https://via.placeholder.com/800x600?text=No+Image';
+                            }
+                            $galleryDate = date('F j, Y', strtotime($gallery['created_at']));
+                            $imageCount = $gallery['image_count'] ?? getGalleryImageCount($pdo, $gallery['id']);
+                        ?>
+                        <div class="gallery-item">
+                            <a href="gallery-view.php?id=<?php echo $gallery['id']; ?>">
+                                <img src="<?php echo htmlspecialchars($coverImage); ?>" 
+                                     alt="<?php echo htmlspecialchars($gallery['name']); ?>"
+                                     style="width: 100%; height: 100%; object-fit: cover;">
+                                <div class="gallery-overlay">
+                                    <div class="gallery-info">
+                                        <h3><?php echo htmlspecialchars($gallery['name']); ?></h3>
+                                        <p><?php echo $galleryDate; ?> • <?php echo $imageCount; ?> Photo<?php echo $imageCount != 1 ? 's' : ''; ?></p>
+                                        <?php if (!empty($gallery['description'])): ?>
+                                            <div class="gallery-desc"><?php echo nl2br(htmlspecialchars($gallery['description'])); ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </a>
                         </div>
-                    </div>
-                </div>
-
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop" alt="Career Fair 2024">
-                    <div class="gallery-overlay">
-                        <div class="gallery-info">
-                            <h3>Career Fair 2024</h3>
-                            <p>November 10, 2024 • 85 Photos</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&h=600&fit=crop" alt="Sports Day 2024">
-                    <div class="gallery-overlay">
-                        <div class="gallery-info">
-                            <h3>Alumni Sports Day 2024</h3>
-                            <p>October 20, 2024 • 150 Photos</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&h=600&fit=crop" alt="Gala Dinner 2024">
-                    <div class="gallery-overlay">
-                        <div class="gallery-info">
-                            <h3>Annual Gala Dinner 2024</h3>
-                            <p>September 15, 2024 • 95 Photos</p>
-                        </div>
-                    </div>
-                </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
 
                 <div class="gallery-item">
                     <img src="https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=800&h=600&fit=crop" alt="Tech Summit 2024">
@@ -254,27 +301,77 @@
                     <div class="gallery-overlay">
                         <div class="gallery-info">
                             <h3>Women Leaders Summit 2024</h3>
-                            <p>February 28, 2024 • 75 Photos</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=600&fit=crop" alt="Innovation Hub">
-                    <div class="gallery-overlay">
-                        <div class="gallery-info">
-                            <h3>Innovation Hub Launch</h3>
-                            <p>January 20, 2024 • 90 Photos</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop" alt="Alumni Meet">
-                    <div class="gallery-overlay">
-                        <div class="gallery-info">
-                            <h3>Regional Alumni Meet</h3>
                             <p>December 5, 2023 • 65 Photos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1505373876331-ff89f46d510d?w=800&h=600&fit=crop" alt="Research Symposium">
+                    <div class="gallery-overlay">
+                        <div class="gallery-info">
+                            <h3>Annual Research Symposium</h3>
+                            <p>November 15, 2023 • 85 Photos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1522071820081-009c5fdc0a27?w=800&h=600&fit=crop" alt="Hackathon">
+                    <div class="gallery-overlay">
+                        <div class="gallery-info">
+                            <h3>24-Hour Hackathon</h3>
+                            <p>October 28, 2023 • 120 Photos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop" alt="Campus Festival">
+                    <div class="gallery-overlay">
+                        <div class="gallery-info">
+                            <h3>Annual Campus Festival</h3>
+                            <p>September 30, 2023 • 150 Photos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&h=600&fit=crop" alt="Alumni Meet">
+                    <div class="gallery-overlay">
+                        <div class="gallery-info">
+                            <h3>Alumni Homecoming</h3>
+                            <p>August 12, 2023 • 95 Photos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1523057530100-383d7fbc77a1?w=800&h=600&fit=crop" alt="Sports Day">
+                    <div class="gallery-overlay">
+                        <div class="gallery-info">
+                            <h3>Annual Sports Day</h3>
+                            <p>July 22, 2023 • 180 Photos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&h=600&fit=crop" alt="Cultural Night">
+                    <div class="gallery-overlay">
+                        <div class="gallery-info">
+                            <h3>Cultural Night Extravaganza</h3>
+                            <p>June 15, 2023 • 110 Photos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1517048676732-d0bc0d4706db?w=800&h=600&fit=crop" alt="Startup Showcase">
+                    <div class="gallery-overlay">
+                        <div class="gallery-info">
+                            <h3>Startup Showcase 2023</h3>
+                            <p>May 5, 2023 • 75 Photos</p>
                         </div>
                     </div>
                 </div>
@@ -283,5 +380,12 @@
     </div>
 
     <script src="../assets/js/script.js"></script>
+    <script>
+        // Add any gallery-specific JavaScript here
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize any gallery functionality
+            console.log('Gallery page loaded');
+        });
+    </script>
 </body>
 </html>

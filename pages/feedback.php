@@ -112,6 +112,19 @@ try {
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --primary-color: #5b1f1f;
+            --secondary-color: #ecc35c;
+            --text-color: #2d3748;
+            --text-light: #718096;
+            --bg-light: #f8fafc;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -119,297 +132,350 @@ try {
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-color);
+            line-height: 1.6;
             min-height: 100vh;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
         }
 
         .main-content {
-            padding: 40px 20px;
+            padding: 2rem 1.5rem 2rem calc(250px + 2rem);
+            max-width: 1400px;
+            margin: 0 auto;
             width: 100%;
             box-sizing: border-box;
+            animation: fadeIn 0.6s ease-out;
+            min-height: 100vh;
         }
 
         .page-header {
             text-align: center;
-            margin-bottom: 50px;
-            animation: fadeInDown 0.6s ease;
+            margin-bottom: 3rem;
+            position: relative;
+            padding-bottom: 1.5rem;
+        }
+        
+        .page-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 2px;
         }
 
         .page-header h1 {
-            color: #5b1f1f;
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 10px;
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--primary-color), #8b2e2e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
         }
 
         .page-header p {
-            color: #666;
-            font-size: 16px;
+            color: var(--text-light);
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7;
         }
 
         .feedback-container {
             display: grid;
-            grid-template-columns: 1fr 1.5fr;
-            gap: 30px;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 20px;
-            width: 100%;
-            box-sizing: border-box;
+            grid-template-columns: 1fr;
+            gap: 2.5rem;
+            margin: 0 auto 3rem;
+            max-width: 1100px;
+            padding: 0 1rem;
+        }
+        
+        @media (min-width: 1024px) {
+            .feedback-container {
+                grid-template-columns: 1.5fr 1fr;
+            }
+        }
+        
+        .feedback-form-container {
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            transition: var(--transition);
+            border: 1px solid rgba(0,0,0,0.05);
+            animation: fadeIn 0.6s ease-out 0.2s both;
+        }
+        
+        .feedback-form-container:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
         }
 
         .feedback-form {
-            background: white;
-            padding: 35px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(91, 31, 31, 0.08);
-            height: fit-content;
-            position: sticky;
-            top: 30px;
-            border: 1px solid rgba(91, 31, 31, 0.05);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: fadeInLeft 0.6s ease;
+            padding: 2.5rem;
+            position: relative;
+            overflow: hidden;
         }
-
-        .feedback-form:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 50px rgba(91, 31, 31, 0.12);
+        
+        .feedback-form::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
         }
 
         .feedback-form h2 {
-            color: #5b1f1f;
-            margin-bottom: 10px;
-            font-size: 28px;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.75rem;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 0.75rem;
+            position: relative;
+            padding-bottom: 0.75rem;
         }
-
-        .feedback-form h2 i {
-            font-size: 24px;
+        
+        .feedback-form h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: var(--secondary-color);
+            border-radius: 3px;
         }
 
         .feedback-form .subtitle {
-            color: #888;
-            font-size: 14px;
-            margin-bottom: 25px;
-            line-height: 1.5;
+            color: var(--text-light);
+            font-size: 1rem;
+            margin-bottom: 1.75rem;
+            line-height: 1.7;
+            max-width: 90%;
         }
 
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 1.5rem;
+            position: relative;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 0.5rem;
             font-weight: 600;
-            color: #333;
+            color: var(--text-color);
+            font-size: 0.95rem;
+            transition: var(--transition);
             font-size: 15px;
         }
 
         .form-group textarea {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            min-height: 180px;
-            resize: vertical;
+            padding: 1rem 1.25rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
             font-family: inherit;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background: #fafafa;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 150px;
+            transition: var(--transition);
+            background-color: var(--white);
+            color: var(--text-color);
+            line-height: 1.6;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
         }
-
-        .form-group textarea:focus {
+        
+        textarea:focus {
             outline: none;
-            border-color: #5b1f1f;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(91, 31, 31, 0.1);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(91, 31, 31, 0.1);
         }
 
-        .form-group textarea::placeholder {
-            color: #aaa;
-        }
-
-        .btn-submit {
-            background: linear-gradient(135deg, #5b1f1f 0%, #7a2828 100%);
+        .submit-btn {
+            background: linear-gradient(135deg, var(--primary-color), #7a2a2a);
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 30px;
-            cursor: pointer;
+            padding: 0.875rem 2rem;
+            border-radius: 10px;
+            font-size: 1rem;
             font-weight: 600;
-            transition: all 0.3s ease;
-            width: 100%;
-            font-size: 16px;
-            display: flex;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 15px rgba(91, 31, 31, 0.3);
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(91, 31, 31, 0.2);
         }
-
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(91, 31, 31, 0.4);
-        }
-
-        .btn-submit:active {
-            transform: translateY(0);
-        }
-
-        .feedbacks-container {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-            width: 100%;
-            overflow-y: auto;
-            max-height: calc(100vh - 200px);
-            padding-right: 10px;
-            animation: fadeInRight 0.6s ease;
-        }
-
-        .feedbacks-container > h2 {
-            color: #5b1f1f;
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .feedbacks-container > h2 i {
-            font-size: 26px;
-        }
-
-        .feedback-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-            border: 1px solid rgba(0, 0, 0, 0.03);
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .feedback-card::before {
+        
+        .submit-btn::before {
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
-            width: 4px;
+            left: -100%;
+            width: 100%;
             height: 100%;
-            background: linear-gradient(180deg, #5b1f1f 0%, #7a2828 100%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(91, 31, 31, 0.25);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
         }
 
-        .feedback-card:hover {
-            transform: translateX(5px);
-            box-shadow: 0 8px 30px rgba(91, 31, 31, 0.12);
+        .section-title {
+            margin: 3.5rem 0 2rem;
+            position: relative;
+            padding: 0 1rem;
         }
 
-        .feedback-card:hover::before {
-            opacity: 1;
-        }
-
-        .feedback-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 18px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .user-avatar {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+        .section-title h2 {
+            color: var(--primary-color);
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 15px;
+            gap: 0.75rem;
+            position: relative;
+            padding-bottom: 1rem;
+        }
+        
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 3px;
+        }
+
+        .marquee-container {
+            display: flex;
+            animation: marquee 60s linear infinite;
+            will-change: transform;
+        }
+
+        .marquee-container:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes marquee {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        .feedback-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 1.75rem;
+            margin: 1rem;
+            box-shadow: var(--shadow-sm);
+            min-width: 300px;
+            max-width: 350px;
+            transition: var(--transition);
+            border: 1px solid rgba(0,0,0,0.05);
+            position: relative;
             overflow: hidden;
-            border: 3px solid #fff;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            flex-shrink: 0;
         }
-
-        .user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        
+        .feedback-card::before {
+            content: '"';
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            font-family: Georgia, serif;
+            font-size: 5rem;
+            color: rgba(91, 31, 31, 0.1);
+            line-height: 1;
+            z-index: 0;
         }
-
-        .user-avatar .initials {
-            font-size: 22px;
-            font-weight: 700;
-            color: #5b1f1f;
+        
+        .feedback-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
         }
 
         .user-info {
-            flex: 1;
-        }
-
-        .user-info h4 {
-            margin: 0;
-            color: #333;
-            font-size: 17px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .user-info .date {
-            color: #999;
-            font-size: 13px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            margin-bottom: 1.25rem;
+            position: relative;
+            z-index: 1;
         }
 
-        .user-info .date i {
-            font-size: 12px;
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 1rem;
+            border: 2px solid var(--white);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: var(--transition);
+        }
+        
+        .feedback-card:hover .user-avatar {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
         }
 
-        .feedback-content {
-            color: #555;
-            line-height: 1.8;
-            white-space: pre-wrap;
-            font-size: 15px;
-            padding: 5px 0;
+        .user-details h4 {
+            margin: 0 0 0.25rem;
+            color: var(--primary-color);
+            font-size: 1.05rem;
+            font-weight: 700;
         }
 
-        .no-feedback {
-            text-align: center;
-            padding: 80px 40px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-        }
-
-        .no-feedback i {
-            font-size: 64px;
-            color: #ddd;
-            margin-bottom: 20px;
-        }
-
-        .no-feedback p {
-            color: #888;
-            font-size: 16px;
-            margin: 0;
-        }
-
-        .char-count {
+        .feedback-date {
+            color: var(--text-light);
+            font-size: 0.8rem;
             text-align: right;
-            font-size: 13px;
-            color: #999;
-            margin-top: 8px;
+            position: relative;
+            z-index: 1;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
         }
 
         @keyframes fadeInDown {
@@ -423,43 +489,54 @@ try {
             }
         }
 
-        @keyframes fadeInLeft {
-            from {
-                opacity: 0;
-                transform: translateX(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @keyframes fadeInRight {
-            from {
-                opacity: 0;
-                transform: translateX(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @media (max-width: 900px) {
+        /* Responsive Design */
+        @media (max-width: 1023px) {
             .feedback-container {
                 grid-template-columns: 1fr;
             }
-
-            .feedback-form {
-                position: static;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                padding: 1.5rem 1.5rem 1.5rem calc(220px + 1.5rem);
             }
-
+            
             .page-header h1 {
-                font-size: 28px;
+                font-size: 2rem;
             }
-
-            .feedback-card:hover {
-                transform: none;
+            
+            .page-header p {
+                font-size: 1rem;
+            }
+            
+            .feedback-form {
+                padding: 1.5rem;
+            }
+            
+            .section-title h2 {
+                font-size: 1.5rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1.5rem 1rem 1.5rem 1rem;
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .page-header h1 {
+                font-size: 1.75rem;
+            }
+            
+            .feedback-form h2 {
+                font-size: 1.5rem;
+            }
+            
+            .feedback-card {
+                min-width: 280px;
             }
         }
     </style>
@@ -473,8 +550,8 @@ try {
             <p>Connect with fellow alumni and inspire the next generation</p>
         </div>
 
-        <div class="feedback-container">
-            <!-- Feedback Form -->
+        <!-- Feedback Form -->
+        <div class="feedback-form-container">
             <div class="feedback-form">
                 <h2><i class="fas fa-pen-fancy"></i> Your Story</h2>
                 <p class="subtitle">Share your journey, insights, and experiences with the community</p>
@@ -498,82 +575,80 @@ try {
                     </button>
                 </form>
             </div>
+        </div>
 
-            <!-- Feedback List -->
-            <div class="feedbacks-container">
+        <!-- Alumni Stories Marquee -->
+        <div class="marquee-section">
+            <div class="section-title">
                 <h2><i class="fas fa-book-open"></i> Alumni Stories</h2>
-                
-                <?php if (count($feedbacks) > 0): ?>
+            </div>
+
+            <?php if (count($feedbacks) > 0): ?>
+                <div class="marquee-container">
                     <?php 
-                    if (empty($feedbacks)) {
-                        echo '<div class="no-feedback">
-                                <i class="fas fa-comment-slash"></i>
-                                <p>No feedback has been shared yet. Be the first to share your experience!</p>
-                              </div>';
-                    } else {
-                        foreach ($feedbacks as $feedback): 
-                            // Determine the display name
-                            $displayName = '';
-                            if (isset($feedback['first_name']) || isset($feedback['last_name'])) {
-                                $displayName = trim(($feedback['first_name'] ?? '') . ' ' . ($feedback['last_name'] ?? ''));
-                            } elseif (isset($feedback['user_name'])) {
-                                $displayName = $feedback['user_name'];
-                            } elseif (isset($feedback['name'])) {
-                                $displayName = $feedback['name'];
-                            } else {
-                                $displayName = 'Anonymous User';
-                            }
-                            
-                            // Get avatar or generate initials
-                            $avatar = $feedback['profile_image'] ?? null;
+                    // Duplicate the feedbacks array for seamless loop
+                    $duplicatedFeedbacks = array_merge($feedbacks, $feedbacks);
+                    
+                    foreach ($duplicatedFeedbacks as $feedback): 
+                        // Determine the display name
+                        $displayName = '';
+                        if (isset($feedback['first_name']) || isset($feedback['last_name'])) {
+                            $displayName = trim(($feedback['first_name'] ?? '') . ' ' . ($feedback['last_name'] ?? ''));
+                        } elseif (isset($feedback['user_name'])) {
+                            $displayName = $feedback['user_name'];
+                        } elseif (isset($feedback['name'])) {
+                            $displayName = $feedback['name'];
+                        } else {
+                            $displayName = 'Anonymous User';
+                        }
+                        
+                        // Get avatar or generate initials
+                        $avatar = $feedback['profile_image'] ?? null;
+                        $initials = '';
+                        if (empty($avatar) && !empty($displayName)) {
+                            $nameParts = explode(' ', $displayName);
                             $initials = '';
-                            if (empty($avatar) && !empty($displayName)) {
-                                $nameParts = explode(' ', $displayName);
-                                $initials = '';
-                                foreach ($nameParts as $part) {
-                                    $initials .= strtoupper(substr(trim($part), 0, 1));
-                                    if (strlen($initials) >= 2) break;
-                                }
-                                $initials = substr($initials, 0, 2);
+                            foreach ($nameParts as $part) {
+                                $initials .= strtoupper(substr(trim($part), 0, 1));
+                                if (strlen($initials) >= 2) break;
                             }
-                            ?>
-                            <div class="feedback-card">
-                                <div class="feedback-header">
-                                    <div class="user-avatar">
-                                        <?php if (!empty($avatar)): ?>
-                                            <img src="<?php echo htmlspecialchars($avatar); ?>" alt="Profile">
-                                        <?php else: ?>
-                                            <div class="initials">
-                                                <?php echo !empty($initials) ? $initials : 'U'; ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="user-info">
-                                        <h4><?php echo htmlspecialchars($displayName); ?></h4>
-                                        <span class="date">
-                                            <i class="far fa-clock"></i>
-                                            <?php 
-                                            $date = new DateTime($feedback['created_at']);
-                                            echo $date->format('F j, Y \a\t g:i A');
-                                            ?>
-                                        </span>
-                                    </div>
+                            $initials = substr($initials, 0, 2);
+                        }
+                    ?>
+                        <div class="feedback-card">
+                            <div class="feedback-header">
+                                <div class="user-avatar">
+                                    <?php if (!empty($avatar)): ?>
+                                        <img src="<?php echo htmlspecialchars($avatar); ?>" alt="Profile">
+                                    <?php else: ?>
+                                        <div class="initials">
+                                            <?php echo !empty($initials) ? $initials : 'U'; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
-                                <div class="feedback-content">
-                                    <?php echo nl2br(htmlspecialchars($feedback['feedback_text'])); ?>
+                                <div class="user-info">
+                                    <h4><?php echo htmlspecialchars($displayName); ?></h4>
+                                    <span class="date">
+                                        <i class="far fa-clock"></i>
+                                        <?php 
+                                        $date = new DateTime($feedback['created_at']);
+                                        echo $date->format('M j, Y');
+                                        ?>
+                                    </span>
                                 </div>
                             </div>
-                    <?php 
-                        endforeach; 
-                    }
-                    ?>
-                <?php else: ?>
-                    <div class="no-feedback">
-                        <i class="fas fa-comment-slash"></i>
-                        <p>No experiences shared yet. Be the first to share your story!</p>
-                    </div>
-                <?php endif; ?>
-            </div>
+                            <div class="feedback-content">
+                                <?php echo nl2br(htmlspecialchars($feedback['feedback_text'])); ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div class="no-feedback">
+                    <i class="fas fa-comment-slash"></i>
+                    <p>No experiences shared yet. Be the first to share your story!</p>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -589,18 +664,14 @@ try {
                 });
             }
 
-            // Smooth scroll for anchor links
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('href'));
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: 'smooth'
-                        });
-                    }
-                });
-            });
+            // Adjust animation speed based on number of cards
+            const marqueeContainer = document.querySelector('.marquee-container');
+            if (marqueeContainer) {
+                const cardCount = marqueeContainer.children.length / 2; // Divided by 2 because we duplicate
+                const baseSpeed = 60; // Base speed in seconds
+                const adjustedSpeed = Math.max(30, baseSpeed * (cardCount / 5)); // Adjust based on card count
+                marqueeContainer.style.animationDuration = adjustedSpeed + 's';
+            }
         });
     </script>
 </body>

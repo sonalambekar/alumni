@@ -567,10 +567,6 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
                     <button type="submit" class="login-btn">
                         <i class="fas fa-sign-in-alt"></i> Sign In
                     </button>
-
-                    <a href="/alumni/index.php" class="back-link">
-                        <i class="fas fa-arrow-left"></i> Back to Home
-                    </a>
                 </form>
             <?php else: ?>
                 <!-- User Profile Section -->
@@ -609,7 +605,7 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
             <div class="brand-icon">
                 <i class="fas fa-university"></i>
             </div>
-            <h2>GM Alumni Network</h2>
+            <h2>Gems of GM</h2>
             <p>Connecting Success Stories</p>
         </div>
     </div>

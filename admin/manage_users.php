@@ -66,19 +66,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = "Error deleting user: " . $e->getMessage();
                 }
             }
+        } elseif ($action === 'add_user') {
+            try {
+                $name = $_POST['name'] ?? '';
+                $email_id = $_POST['email_id'] ?? '';
+                $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+                $usn = $_POST['usn'] ?? null;
+                $year_of_graduation = !empty($_POST['year_of_graduation']) ? (int)$_POST['year_of_graduation'] : null;
+                $phone_number = $_POST['phone_number'] ?? null;
+                $institute = $_POST['institute'] ?? null;
+                $branch = $_POST['branch'] ?? null;
+                $designation = $_POST['designation'] ?? null;
+                $is_director = isset($_POST['is_director']) ? 1 : 0;
+                $is_active = 1; // New users are active by default
+                
+                $stmt = $pdo->prepare("
+                    INSERT INTO users (
+                        name, email_id, password, usn, year_of_graduation, 
+                        phone_number, institute, branch, designation, 
+                        is_director, is_active, created_at, updated_at
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()
+                    )
+                ");
+                
+                $stmt->execute([
+                    $name, $email_id, $password, $usn, $year_of_graduation,
+                    $phone_number, $institute, $branch, $designation,
+                    $is_director, $is_active
+                ]);
+                
+                $success = "User added successfully!";
+                // Refresh the page to show the new user
+                header("Location: manage_users.php?success=user_added");
+                exit();
+                
+            } catch(PDOException $e) {
+                if ($e->getCode() == '23000') {
+                    $error = "A user with this email already exists.";
+                } else {
+                    $error = "Error adding user: " . $e->getMessage();
+                }
+                error_log($error);
+            }
         }
     }
 }
 
 // Get all users
 try {
+    // First, get the column names from the users table
+    $stmt = $pdo->query("SHOW COLUMNS FROM users");
+    $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    // Debug: Output the column names
+    error_log("Columns in users table: " . print_r($columns, true));
+    
+    // Get the user data
     $stmt = $pdo->query("
         SELECT * FROM users
         ORDER BY created_at DESC
     ");
     $users = $stmt->fetchAll();
+    
+    // Debug: Output the first user's data
+    if (!empty($users)) {
+        error_log("First user data: " . print_r($users[0], true));
+    }
 } catch(PDOException $e) {
     $error = "Error loading users: " . $e->getMessage();
+    error_log($error);
 }
 ?>
 
@@ -92,6 +149,143 @@ try {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+        
+        .modal.show {
+            display: block;
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+        
+        .close {
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -10px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+            padding: 0 10px;
+            min-width: 200px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-primary:hover {
+            background-color: #4a1a1a;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+        
+        .fab:hover {
+            background-color: #4a1a1a;
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        
         :root {
             --primary-color: #5b1f1f;
             --secondary-color: #ecc35c;
@@ -366,27 +560,27 @@ try {
                             <?php foreach ($users as $user): ?>
                                 <tr>
                                     <td>
-                                        <strong><?php echo htmlspecialchars($user['full_name']); ?></strong>
-                                        <?php if ($user['username']): ?>
+                                        <strong><?php echo !empty($user['name']) ? htmlspecialchars($user['name']) : 'N/A'; ?></strong>
+                                        <?php if (!empty($user['usn'])): ?>
                                             <br>
                                             <small style="color: var(--text-light);">
-                                                @<?php echo htmlspecialchars($user['username']); ?>
+                                                <?php echo htmlspecialchars($user['usn']); ?>
                                             </small>
                                         <?php endif; ?>
                                     </td>
-                                    <td><?php echo htmlspecialchars($user['email']); ?></td>
+                                    <td><?php echo !empty($user['email_id']) ? htmlspecialchars($user['email_id']) : 'N/A'; ?></td>
                                     <td>
-                                        <span class="role-badge role-<?php echo $user['role']; ?>">
-                                            <?php echo ucfirst($user['role']); ?>
+                                        <span class="role-badge role-<?php echo htmlspecialchars($user['role'] ?? 'alumni'); ?>">
+                                            <?php echo ucfirst(htmlspecialchars($user['role'] ?? 'alumni')); ?>
                                         </span>
                                     </td>
                                     <td>
-                                        <?php if ($user['graduation_year']): ?>
-                                            <?php echo $user['graduation_year']; ?>
-                                            <?php if ($user['degree']): ?>
+                                        <?php if (!empty($user['year_of_graduation'])): ?>
+                                            <?php echo htmlspecialchars($user['year_of_graduation']); ?>
+                                            <?php if (!empty($user['branch'])): ?>
                                                 <br>
                                                 <small style="color: var(--text-light);">
-                                                    <?php echo htmlspecialchars($user['degree']); ?>
+                                                    <?php echo htmlspecialchars($user['branch']); ?>
                                                 </small>
                                             <?php endif; ?>
                                         <?php else: ?>
@@ -394,12 +588,12 @@ try {
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <?php if ($user['current_company']): ?>
-                                            <?php echo htmlspecialchars($user['current_company']); ?>
-                                            <?php if ($user['current_position']): ?>
+                                        <?php if (!empty($user['institute'])): ?>
+                                            <?php echo htmlspecialchars($user['institute']); ?>
+                                            <?php if (!empty($user['designation'])): ?>
                                                 <br>
                                                 <small style="color: var(--text-light);">
-                                                    <?php echo htmlspecialchars($user['current_position']); ?>
+                                                    <?php echo htmlspecialchars($user['designation']); ?>
                                                 </small>
                                             <?php endif; ?>
                                         <?php else: ?>
@@ -407,18 +601,24 @@ try {
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <?php echo $user['location'] ? htmlspecialchars($user['location']) : '<span style="color: var(--text-light);">-</span>'; ?>
+                                        <?php echo !empty($user['location'] ?? '') ? htmlspecialchars($user['location']) : '<span style="color: var(--text-light);">-</span>'; ?>
                                     </td>
                                     <td>
-                                        <span class="status-badge <?php echo $user['is_active'] ? 'status-active' : 'status-inactive'; ?>">
-                                            <?php echo $user['is_active'] ? 'Active' : 'Inactive'; ?>
+                                        <span class="status-badge <?php echo !empty($user['is_active']) ? 'status-active' : 'status-inactive'; ?>">
+                                            <?php 
+                                            if (isset($user['is_director']) && $user['is_director']) {
+                                                echo 'Director';
+                                            } else {
+                                                echo !empty($user['is_active']) ? 'Active' : 'Inactive';
+                                            }
+                                            ?>
                                         </span>
                                     </td>
                                     <td>
-                                        <?php echo date('M j, Y', strtotime($user['created_at'])); ?>
+                                        <?php echo !empty($user['created_at']) ? date('M j, Y', strtotime($user['created_at'])) : 'N/A'; ?>
                                     </td>
                                     <td class="actions-cell">
-                                        <?php if ($user['role'] !== 'admin'): ?>
+                                        <?php if (empty($user['is_director'])): ?>
                                             <button class="btn btn-secondary" onclick="editUser(<?php echo $user['id']; ?>)">
                                                 <i class="fas fa-edit"></i> Edit
                                             </button>
@@ -449,30 +649,116 @@ try {
         </div>
     </div>
 
+    <!-- Floating Action Button -->
+    <button class="fab" onclick="document.getElementById('addUserModal').classList.add('show')">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New User</h3>
+                <span class="close" onclick="closeModal('addUserModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm" method="POST" action="">
+                    <input type="hidden" name="action" value="add_user">
+                    
+                    <div class="form-group">
+                        <label for="name">Full Name *</label>
+                        <input type="text" id="name" name="name" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email_id">Email *</label>
+                        <input type="email" id="email_id" name="email_id" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="usn">USN</label>
+                        <input type="text" id="usn" name="usn" class="form-control">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="year_of_graduation">Graduation Year</label>
+                            <input type="number" id="year_of_graduation" name="year_of_graduation" class="form-control" min="1900" max="2099">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="branch">Branch</label>
+                            <input type="text" id="branch" name="branch" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone_number">Phone Number</label>
+                        <input type="tel" id="phone_number" name="phone_number" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="institute">Institute/Company</label>
+                        <input type="text" id="institute" name="institute" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="designation">Designation</label>
+                        <input type="text" id="designation" name="designation" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password *</label>
+                        <input type="password" id="password" name="password" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="is_director">User Type</label>
+                        <select id="is_director" name="is_director" class="form-control">
+                            <option value="0">Regular User</option>
+                            <option value="1">Director</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Add User</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('addUserModal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         function editUser(userId) {
             // Find the user data and populate the modal
-            const users = <?php echo json_encode($users); ?>;
+            const users = <?php echo json_encode($users ?? []); ?>;
             const user = users.find(u => u.id == userId);
 
             if (user) {
-                document.getElementById('edit_user_id').value = user.id;
-                document.getElementById('edit_email').value = user.email;
-                document.getElementById('edit_full_name').value = user.full_name;
-                document.getElementById('edit_role').value = user.role;
+                document.getElementById('edit_user_id').value = user.id || '';
+                document.getElementById('edit_email').value = user.email || '';
+                document.getElementById('edit_full_name').value = user.full_name || '';
+                document.getElementById('edit_role').value = user.role || 'alumni';
                 document.getElementById('edit_graduation_year').value = user.graduation_year || '';
                 document.getElementById('edit_degree').value = user.degree || '';
                 document.getElementById('edit_current_company').value = user.current_company || '';
                 document.getElementById('edit_current_position').value = user.current_position || '';
                 document.getElementById('edit_location').value = user.location || '';
-                document.getElementById('edit_is_active').checked = user.is_active == 1;
+                document.getElementById('edit_is_active').checked = (user.is_active == 1);
 
                 document.getElementById('editModal').classList.add('show');
             }
         }
 
-        function closeEditModal() {
-            document.getElementById('editModal').classList.remove('show');
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+        
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('show');
+            }
         }
     </script>
 </body>

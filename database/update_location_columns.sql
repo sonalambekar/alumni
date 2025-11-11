@@ -1,0 +1,5 @@
+-- First, add latitude and longitude columns if they don't exist
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS latitude DECIMAL(10, 8) NULL,
+ADD COLUMN IF NOT EXISTS longitude DECIMAL(11, 8) NULL,
+ADD COLUMN IF NOT EXISTS location_updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;

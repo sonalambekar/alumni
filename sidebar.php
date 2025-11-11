@@ -30,7 +30,7 @@ try {
 
     <div class="sidebar-header">
         <div class="logo-container">
-            <span class="logo-text">Alumni Connect</span>
+            <span class="logo-text">Gems of GM</span>
         </div>
     </div>
 
@@ -357,6 +357,7 @@ try {
                     <li><a href="/alumni/pages/directory.php">Directory</a></li>
                     <li><a href="/alumni/pages/members-nearby.php">Members Nearby</a></li>
                     <li><a href="/alumni/pages/yearbook.php">Yearbook</a></li>
+                    <li><a href="/alumni/pages/institute_scholarship.php"><i class="fas fa-graduation-cap" style="margin-right: 5px;"></i>Institute Scholarship</a></li>
                 </ul>
             </li>
 
@@ -392,29 +393,25 @@ try {
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/alumni/pages/internships.php" class="nav-link">
+                <a href="/alumni/pages/yearbook.php" class="nav-link">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M12 16h.01M16 16h.01M20 16h.01M4 12h16a2 2 0 002-2V8a2 2 0 00-2-2H4a2 2 0 00-2 2v4a2 2 0 002 2z"></path>
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                     </svg>
-                    <span class="nav-text">Internships</span>
+                    <span class="nav-text">Yearbook</span>
                 </a>
             </li>
 
-            <li class="nav-item has-dropdown">
-                <a href="#" class="nav-link dropdown-toggle">
+            <li class="nav-item">
+                <a href="/alumni/proud.php" class="nav-link">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                     </svg>
-                    <span class="nav-text">Enterprise</span>
-                    <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
+                    <span class="nav-text">Proud Alumni</span>
                 </a>
-                <ul class="dropdown-menu">
-                    <li><a href="/alumni/pages/business-connect.php">Business Connect</a></li>
-                    <li><a href="/alumni/pages/member-support.php">Member Support</a></li>
-                    <li><a href="/alumni/pages/couch_surfing_enterprises.php">Enterprises Couch Surfing</a></li>
-                </ul>
             </li>
 
             <li class="nav-item has-dropdown">
@@ -430,25 +427,7 @@ try {
                     </svg>
                 </a>
                 <ul class="dropdown-menu">
-                    <li><a href="/alumni/pages/fundraising.php">Fund Raising</a></li>
                     <li><a href="/alumni/pages/mentorship.php">Mentorship</a></li>
-                    <li><a href="/alumni/pages/special-groups.php">Special Interest Groups</a></li>
-                </ul>
-            </li>
-
-            <li class="nav-item has-dropdown">
-                <a href="#" class="nav-link dropdown-toggle">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                    </svg>
-                    <span class="nav-text">Enterprise</span>
-                    <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </a>
-                <ul class="dropdown-menu">
-                    <li><a href="/alumni/pages/business-connect.php">Business Connect</a></li>
-                    <li><a href="/alumni/pages/member-support.php">Member Support</a></li>
                 </ul>
             </li>
 
@@ -490,9 +469,23 @@ try {
                     <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; margin-right: 12px; flex-shrink: 0;">
                         <img src="<?php 
                             $userName = $user['name'] ?? 'User';
-                            echo !empty($user['profile_picture']) ? 
-                                '../uploads/profile_pictures/' . htmlspecialchars($user['profile_picture']) : 
-                                'https://ui-avatars.com/api/?name=' . urlencode($userName) . '&size=200&background=5b1f1f&color=fff'; 
+                            $defaultAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($userName) . '&size=200&background=5b1f1f&color=fff';
+                            
+                            if (!empty($user['profile_picture'])) {
+                                // Check if it's a full URL or a relative path
+                                if (filter_var($user['profile_picture'], FILTER_VALIDATE_URL)) {
+                                    echo htmlspecialchars($user['profile_picture']);
+                                } else {
+                                    // Handle both cases where path might be stored with or without 'attachments/'
+                                    $profilePic = $user['profile_picture'];
+                                    if (strpos($profilePic, 'attachments/') !== 0) {
+                                        $profilePic = 'attachments/profile_pictures/' . ltrim($profilePic, '/');
+                                    }
+                                    echo htmlspecialchars($profilePic);
+                                }
+                            } else {
+                                echo $defaultAvatar;
+                            }
                         ?>" 
                              alt="Profile" 
                              style="width: 100%; height: 100%; object-fit: cover;">
