@@ -240,6 +240,83 @@ $pageTitle = 'Proud Alumni';
                 
             </div>
         </div>
+                <div class="alumni-card">
+                    <div class="alumni-image">
+                        <img src="assets/images/medals/PRAJWAL NAYAK .png" alt="Prajwal Nayak">
+                    </div>
+                    <div class="alumni-content">
+                        <h2 class="alumni-name">PRAJWAL NAYAK [4GM02CS025]</h2>
+                        <span class="alumni-year">2006 Output Batch</span>
+                        <p class="alumni-description">
+                            Currently working as Director, software delivery lead Global Disputes at VISA. He also worked in Deutsche Bank Singapore for Three years as Technical specialist and software Engineer in HCL Technologist. He a seasoned technology leader with a knack for driving innovation and performance in the realms of GenAI, enterprise systems and big data. Leading high-performing teams, He specialize in designing and delivering scalable. Performance – optimized solutions that power business success. He expertise spans: Architecting Enterprise system, Big data & Analytics, Performance & Security, Distributed systems.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="alumni-card">
+                    <div class="alumni-image">
+                        <img src="assets/images/medals/UDAY V HARIHAR .png" alt="Uday V Harihar">
+                    </div>
+                    <div class="alumni-content">
+                        <h2 class="alumni-name">UDAY V HARIHAR [4GM09CS407]</h2>
+                        <span class="alumni-year">2012 Output Batch</span>
+                        <p class="alumni-description">
+                            Currently working as Tech Lead at Resideo in Honewell Home. Experienced Android native App Developer and Flutter for cross platform with a demonstrated history of working in Home Automation and Security system services industry. Skilled in Android. Has projected his academic excellence in being second person out of selected 1500 people and recently elevated as senior developer. He Won Runner-up award in Hackathon-15.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="alumni-card">
+                    <div class="alumni-image">
+                        <img src="assets/images/medals/SHREEGANESHA G J .png" alt="Shreeganesha G J">
+                    </div>
+                    <div class="alumni-content">
+                        <h2 class="alumni-name">SHREEGANESHA G J [4GM16CS046]</h2>
+                        <span class="alumni-year">2020 Output Batch</span>
+                        <p class="alumni-description">
+                            Passionate Software Engineer currently working as a Senior Software Engineer at Target Corporation, specializing in the design and development of P1 (mission-critical) backend applications that drive Target's large-scale retail systems. Adept at building highly scalable, resilient, and efficient distributed systems ensuring business continuity and performance at scale. Began professional journey with Subex, gaining a strong foundation in backend engineering and product development. Recognized for his problem-solving mindset, leadership, and dedication to continuous learning. Passionate about leveraging technology to create reliable systems that impact millions of users every day.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="alumni-card">
+                    <div class="alumni-image">
+                        <img src="assets/images/medals/KRUSHI D .png" alt="Krushi D">
+                    </div>
+                    <div class="alumni-content">
+                        <h2 class="alumni-name">KRUSHI D [4GM18CS027]</h2>
+                        <span class="alumni-year">2022 Output Batch</span>
+                        <p class="alumni-description">
+                            Software Engineer at Ernst & Young, specializing in developing and enhancing web applications using React. Experienced in building responsive, efficient, and user-focused interfaces that support business growth and client satisfaction. Started and continuing career with Ernst & Young, gaining strong skills in frontend architecture, component-based development, and cross-functional collaboration. Committed to continuous learning and using modern technologies to deliver reliable and high-quality web solutions.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="alumni-card">
+                    <div class="alumni-image">
+                        <img src="assets/images/medals/SHEETAL S V .png" alt="Sheetal S V">
+                    </div>
+                    <div class="alumni-content">
+                        <h2 class="alumni-name">SHEETAL S V [4GM19CS050]</h2>
+                        <span class="alumni-year">2023 Output Batch</span>
+                        <p class="alumni-description">
+                            A passionate cyber security professional at Mercedes-Benz R&D, India, Specializing in PAMSM, PM Tools, IAM, SecOps. She is committed to safeguarding data and continuously learning to deepen her knowledge and skill in cybersecurity. She has received the Bronze award from Mercedes-Benz R&D India.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="alumni-card">
+                    <div class="alumni-image">
+                        <img src="assets/images/medals/PRAVEEN D .png" alt="Praveen D">
+                    </div>
+                    <div class="alumni-content">
+                        <h2 class="alumni-name">PRAVEEN D [4GM21CS404]</h2>
+                        <span class="alumni-year">2024 Output Batch</span>
+                        <p class="alumni-description">
+                            Praveen D serves as an Assistant Manager at LXL Ideas, Bengaluru, contributing to digital learning platforms such as School Cinema, WACE, and SCIFF. He focuses on integrating Artificial Intelligence, Agentic AI, and software innovation to enhance the future of learning through technology. With expertise in product strategy, generative AI, and full-stack development, Actively involved in the startup ecosystem, Praveen brings an entrepreneurial approach to digital transformation. A graduate in Computer Science Engineering from GM Institute of Technology, Davangere.
+                        </p>
+                    </div>
+                </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

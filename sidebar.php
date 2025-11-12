@@ -356,7 +356,7 @@ try {
                     <li><a href="/alumni/pages/announcements.php">Announcements</a></li>
                     <li><a href="/alumni/pages/directory.php">Directory</a></li>
                     <li><a href="/alumni/pages/members-nearby.php">Members Nearby</a></li>
-                    <li><a href="/alumni/pages/yearbook.php">Yearbook</a></li>
+                    <li><a href="/alumni/pages/yearbook.php">Quarterly News Letter</a></li>
                     <li><a href="/alumni/pages/institute_scholarship.php"><i class="fas fa-graduation-cap" style="margin-right: 5px;"></i>Institute Scholarship</a></li>
                 </ul>
             </li>
@@ -390,15 +390,6 @@ try {
                         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                     </svg>
                     <span class="nav-text">Jobs</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/alumni/pages/yearbook.php" class="nav-link">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                    </svg>
-                    <span class="nav-text">Yearbook</span>
                 </a>
             </li>
 

@@ -308,7 +308,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                 <img src="assets/images/Generated Image October 17, 2025 - 11_10AM.png" alt="Alumni Event">
             </div>
             <div class="hero-content">
-                <h1>Welcome to <span>Gems of GM</span></h1>
+                <h1 style="font-size: 36px;">Welcome to <span>Gems of GM </span>- Alumni Portal of GM Group of Institutions</h1>
                 <p>Welcome to the Gems of GM platform, where memories meet opportunities. Our vibrant community brings together graduates from across the globe, fostering connections that transcend time and distance.</p>
                 <p>Whether you're looking to reconnect with old friends, mentor the next generation, or explore new career opportunities, our platform provides the tools and resources to help you stay engaged with your alma mater.</p>
                 <p>Join thousands of alumni who are making a difference in their communities and industries worldwide.</p>
@@ -318,19 +318,19 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
         <!-- Vision & Stats Section -->
         <section class="vision-section">
             <h2>Our Vision</h2>
-            <p>To create a thriving global community of alumni who inspire, support, and empower each other while contributing to the growth and excellence of our institution.</p>
+            <p>To create a thriving global community of alumni who inspire, support, and empower each other while contributing to the growth and excellence of GM Group of Institutions.</p>
             
             <div class="stats-container">
                 <div class="stat-card">
-                    <div class="stat-number" data-target="15000">0</div>
+                    <div class="stat-number" data-target="15000" data-suffix="+">0</div>
                     <div class="stat-label">Active Members</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number" data-target="50">0</div>
-                    <div class="stat-label">Graduating Batches</div>
+                    <div style="font-size: 2.5em; font-weight: bold; line-height: 1.2; color: var(--primary-color);">2002</div>
+                    <div class="stat-label">We are since</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number" data-target="85">0</div>
+                    <div class="stat-number" data-target="85" data-suffix="+">0</div>
                     <div class="stat-label">Cities Worldwide</div>
                 </div>
             </div>
@@ -339,7 +339,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
         <!-- Alumni Highlights Section -->
         <section class="alumni-highlights">
             <div class="section-header">
-                <h2>Meet Our Alumni</h2>
+                <h2>Meet Our Recent Alumni</h2>
                 <p>Celebrating the achievements of our distinguished alumni community</p>
             </div>
             
@@ -373,6 +373,59 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                         <img src="assets/images/medals/Asrar%20S.%20B.png" alt="Alumni Achievement 5">
                     </div>
                     <div class="alumni-name">Asrar S. B</div>
+                </div>
+                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                    <div class="alumni-avatar">
+                        <img src="assets/images/medals/pranav.png" alt="Alumni Achievement 6">
+                    </div>
+                    <div class="alumni-name">Pranav V</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Proud Alumni Section -->
+        <section class="alumni-highlights" style="margin-top: -40px;">
+            <div class="section-header">
+                <h2>Meet Our Proud Alumni</h2>
+                <p>Celebrating the outstanding achievements of our distinguished alumni community</p>
+            </div>
+            
+            <div class="alumni-grid">
+                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                    <div class="alumni-avatar">
+                        <img src="assets/images/medals/PRAJWAL%20NAYAK%20.png" alt="Prajwal Nayak">
+                    </div>
+                    <div class="alumni-name">Prajwal Nayak</div>
+                </div>
+                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                    <div class="alumni-avatar">
+                        <img src="assets/images/medals/UDAY%20V%20HARIHAR%20.png" alt="Uday V Harihar">
+                    </div>
+                    <div class="alumni-name">Uday V Harihar</div>
+                </div>
+                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                    <div class="alumni-avatar">
+                        <img src="assets/images/medals/SHREEGANESHA%20G%20J%20.png" alt="Shreeganesha G J">
+                    </div>
+                    <div class="alumni-name">Shreeganesha G J</div>
+                </div>
+                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                    <div class="alumni-avatar">
+                        <img src="assets/images/medals/KRUSHI%20D%20.png" alt="Krushi D">
+                    </div>
+                    <div class="alumni-name">Krushi D</div>
+                </div>
+                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                    <div class="alumni-avatar">
+                        <img src="assets/images/medals/SHEETAL%20S%20V%20.png" alt="Sheetal S V">
+                    </div>
+                    <div class="alumni-name">Sheetal S V</div>
+                </div>
+                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                    <div class="alumni-avatar">
+                        <img src="assets/images/medals/PRAVEEN%20D%20.png" alt="Praveen D">
+                    </div>
+                    <div class="alumni-name">Praveen D</div>
                 </div>
             </div>
         </section>
@@ -557,18 +610,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                         </div>
 
                         <!-- Share Experience Card -->
-                        <div class="service-card" style="flex: 0 0 300px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="window.location.href='pages/feedback.php'" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.15)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.08)';">
-                            <div class="card-icon" style="background-color: #f3e5f5; padding: 25px; text-align: center;">
-                                <i class="fas fa-comment-alt" style="font-size: 2.5rem; color: #9c27b0;"></i>
-                            </div>
-                            <div class="card-content" style="padding: 25px;">
-                                <h3 style="color: #333; margin-bottom: 15px; font-size: 1.4rem;">Share Your Experience</h3>
-                                <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">Share your career journey and insights with fellow alumni and students.</p>
-                                <a href="pages/feedback.php" class="card-link" style="color: #9c27b0; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
-                                    Share your story <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
-                                </a>
-                            </div>
-                        </div>
+                        
 
                         <!-- Institution Scholarship Card -->
                         <div class="service-card" style="flex: 0 0 300px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.3s ease, box-shadow 0.3s ease;">
@@ -576,7 +618,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                                 <i class="fas fa-graduation-cap" style="font-size: 2.5rem; color: #2e7d32;"></i>
                             </div>
                             <div class="card-content" style="padding: 25px;">
-                                <h3 style="color: #333; margin-bottom: 15px; font-size: 1.4rem;">Institution Scholarship</h3>
+                                <h3 style="color: #333; margin-bottom: 15px; font-size: 1.4rem;">Institute Scholarship</h3>
                                 <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">Support the next generation of students by contributing to our scholarship fund.</p>
                                 <a href="/alumni/pages/institute_scholarship.php" class="card-link" style="color: #2e7d32; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
                                     Explore scholarships <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
@@ -597,8 +639,22 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                                 </a>
                             </div>
                         </div>
+                        <div class="service-card" style="flex: 0 0 300px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;" onclick="window.location.href='pages/feedback.php'" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.15)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.08)';">
+                            <div class="card-icon" style="background-color: #f3e5f5; padding: 25px; text-align: center;">
+                                <i class="fas fa-comment-alt" style="font-size: 2.5rem; color: #9c27b0;"></i>
+                            </div>
+                            <div class="card-content" style="padding: 25px;">
+                                <h3 style="color: #333; margin-bottom: 15px; font-size: 1.4rem;">Share Your Experience</h3>
+                                <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">Share your career journey and insights with fellow alumni and students.</p>
+                                <a href="pages/feedback.php" class="card-link" style="color: #9c27b0; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                    Share your story <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
+                                </a>
+                            </div>
+                        </div>
                     </div>
+                    
                 </div>
+
                 
                 <!-- Scroll hint for desktop -->
                 <div class="scroll-hint" style="text-align: center; margin-top: -25px; color: #888; font-size: 0.9rem; display: none;">
@@ -767,6 +823,51 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
     </div>
 
     <script>
+        // Counter Animation
+        document.addEventListener('DOMContentLoaded', function() {
+            const statNumbers = document.querySelectorAll('.stat-number');
+            
+            // Function to check if element is in viewport
+            function isInViewport(element) {
+                const rect = element.getBoundingClientRect();
+                return (
+                    rect.top >= 0 &&
+                    rect.left >= 0 &&
+                    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) * 1.5 &&
+                    rect.right <= (window.innerWidth || document.documentElement.clientWidth) * 1.5
+                );
+            }
+
+            // Function to animate counters
+            function animateCounters() {
+                statNumbers.forEach(stat => {
+                    if (isInViewport(stat) && !stat.classList.contains('animated')) {
+                        const target = parseInt(stat.getAttribute('data-target'));
+                        const suffix = stat.getAttribute('data-suffix') || '';
+                        
+                        const counter = new countUp.CountUp(stat, target, {
+                            startVal: 0,
+                            duration: 2.5,
+                            suffix: suffix,
+                            useEasing: true,
+                            useGrouping: true,
+                            separator: ',',
+                            decimal: '.',
+                        });
+                        
+                        counter.start();
+                        stat.classList.add('animated');
+                    }
+                });
+            }
+
+            // Initial check
+            animateCounters();
+            
+            // Check on scroll
+            window.addEventListener('scroll', animateCounters);
+        });
+
         // Group members modal functionality
         function showGroupMembers(groupId, groupName) {
             const modal = document.getElementById('groupMembersModal');
@@ -868,6 +969,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
     <script src="assets/js/script.js?v=2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.3.2/countUp.umd.min.js"></script>
 
     <style>
         /* User location markers */

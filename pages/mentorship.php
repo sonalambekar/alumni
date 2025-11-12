@@ -13,7 +13,7 @@ $userImage = '';
 // Get user data if logged in
 if ($isLoggedIn) {
     try {
-        $stmt = $pdo->prepare("SELECT name, email, profile_picture FROM users WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT name, email_id as email, profile_picture FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -198,11 +198,49 @@ try {
         }
 
         .mentorship-header p {
-            margin: 0;
+            margin: 0 0 25px 0;
             font-size: 1.1em;
-            opacity: 0.95;
-            max-width: 700px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Counter Section */
+        .counter-section {
+            background-color: var(--white);
+            padding: 40px 0;
+            margin: -20px 0 40px 0;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .counter-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            max-width: 1200px;
             margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .counter-item {
+            text-align: center;
+            padding: 20px;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .counter-number {
+            font-size: 3em;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+            line-height: 1.2;
+        }
+        
+        .counter-label {
+            color: var(--text-light);
+            font-size: 1.1em;
+            margin: 5px 0 0 0;
         }
 
         .main-content {
@@ -755,6 +793,7 @@ try {
             <h1><i class="fas fa-graduation-cap"></i> Mentorship Program</h1>
             <p>Connect with experienced alumni mentors or share your knowledge by becoming a mentor yourself</p>
         </div>
+        
 
         <div class="mentors-container">
             <div class="mentors-header">
@@ -916,6 +955,7 @@ try {
                     </div>
                 <?php else: ?>
                     <form method="POST" action="" id="mentorForm" onsubmit="return submitMentorForm(event)">
+                        <input type="hidden" name="email" value="<?php echo htmlspecialchars($userEmail); ?>">
                         <div class="profile-preview">
                             <div class="profile-preview-avatar" style="background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; border: 2px solid #5b1f1f;">
                                 <img 
@@ -938,7 +978,11 @@ try {
                             </div>
                             <div class="profile-preview-info">
                                 <h3><?php echo htmlspecialchars($userName); ?></h3>
-                                <p><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($userEmail); ?></p>
+                                <?php if (!empty($userEmail)): ?>
+                                    <p><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($userEmail); ?></p>
+                                <?php else: ?>
+                                    <p><i class="fas fa-exclamation-triangle" style="color: #e53e3e;"></i> Email not found</p>
+                                <?php endif; ?>
                             </div>
                         </div>
                         
