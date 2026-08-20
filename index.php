@@ -1,10 +1,9 @@
 <?php
 session_start();
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id']) || $_SESSION['user_id'] <= 0) {
-    // User is not logged in, redirect to login page
-    header("Location: /alumni/login.php");
+    // User is not logged in, show premium landing page
+    include 'pages/landing.php';
     exit();
 }
 
@@ -305,7 +304,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
         <!-- Hero Section -->
         <section class="hero-section">
             <div class="hero-image">
-                <img src="assets/images/Generated Image October 17, 2025 - 11_10AM.png" alt="Alumni Event">
+                <img src="assets/images/alumni.png" alt="Alumni Event">
             </div>
             <div class="hero-content">
                 <h1 style="font-size: 36px;">Welcome to <span>Gems of GM </span>- Alumni Portal of GM Group of Institutions</h1>
@@ -322,17 +321,43 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
             
             <div class="stats-container">
                 <div class="stat-card">
-                    <div class="stat-number" data-target="15000" data-suffix="+">0</div>
+                    <div class="stat-number" data-target="2720">0</div>
                     <div class="stat-label">Active Members</div>
                 </div>
                 <div class="stat-card">
                     <div style="font-size: 2.5em; font-weight: bold; line-height: 1.2; color: var(--primary-color);">2002</div>
                     <div class="stat-label">We are since</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number" data-target="85" data-suffix="+">0</div>
-                    <div class="stat-label">Cities Worldwide</div>
+                <div class="stat-card" style="padding: 0; overflow: hidden; height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <div id="gmuMap" style="height: 160px; width: 100%;"></div>
+                    <div style="font-size: 1.1em; font-weight: 500; color: var(--primary-color); margin-top: 5px;">We Live Here</div>
                 </div>
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // GMU Davangere coordinates
+                    const gmuCoords = [14.4366017, 75.8998251];
+                    
+                    // Initialize the map
+                    const map = L.map('gmuMap').setView(gmuCoords, 15);
+                    
+                    // Add OpenStreetMap tiles
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                        maxZoom: 18,
+                    }).addTo(map);
+                    
+                    // Add a marker for GMU
+                    L.marker(gmuCoords).addTo(map)
+                        .bindPopup('GMU Campus, Davangere')
+                        .openPopup();
+                        
+                    // Make the map container clickable to open in new tab
+                    document.getElementById('gmuMap').style.cursor = 'pointer';
+                    document.getElementById('gmuMap').addEventListener('click', function() {
+                        window.open('https://www.openstreetmap.org/query?lat=' + gmuCoords[0] + '&lon=' + gmuCoords[1], '_blank');
+                    });
+                });
+                </script>
             </div>
         </section>
 
@@ -344,44 +369,335 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
             </div>
             
             <div class="alumni-grid">
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card" onclick="showAlumniPopup('pavan')" style="cursor: pointer;">
                     <div class="alumni-avatar">
-                        <img src="assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2010.09.45_92cc285f.jpg" alt="Alumni Achievement 1">
+                        <img src="assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2010.09.45_92cc285f.jpg" alt="Pavan Varahad V">
                     </div>
                     <div class="alumni-name">Pavan Varahad V</div>
                 </div>
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card" onclick="showAlumniPopup('khushi')" style="cursor: pointer;">
                     <div class="alumni-avatar">
-                        <img src="assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2014.40.27_3afb5fa0.jpg" alt="Alumni Achievement 2">
+                        <img src="assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2014.40.27_3afb5fa0.jpg" alt="Khushi Patil">
                     </div>
                     <div class="alumni-name">Khushi Patil</div>
                 </div>
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card" onclick="showAlumniPopup('faizan')" style="cursor: pointer;">
                     <div class="alumni-avatar">
-                        <img src="assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2014.40.47_5aec4de6.jpg" alt="Alumni Achievement 3">
+                        <img src="assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2014.40.47_5aec4de6.jpg" alt="Md Faizan Khan">
                     </div>
                     <div class="alumni-name">Md Faizan Khan</div>
                 </div>
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card" onclick="showAlumniPopup('abhishek')" style="cursor: pointer;">
                     <div class="alumni-avatar">
-                        <img src="assets/images/medals/Abhishek%20Belagavi.png" alt="Alumni Achievement 4">
+                        <img src="assets/images/medals/Abhishek%20Belagavi.png" alt="Abhishek Belagavi">
                     </div>
                     <div class="alumni-name">Abhishek Belagavi</div>
                 </div>
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card" onclick="showAlumniPopup('asrar')" style="cursor: pointer;">
                     <div class="alumni-avatar">
-                        <img src="assets/images/medals/Asrar%20S.%20B.png" alt="Alumni Achievement 5">
+                        <img src="assets/images/medals/Asrar%20S.%20B.png" alt="Asrar S. B">
                     </div>
                     <div class="alumni-name">Asrar S. B</div>
                 </div>
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card" onclick="showAlumniPopup('pranav')" style="cursor: pointer;">
                     <div class="alumni-avatar">
-                        <img src="assets/images/medals/pranav.png" alt="Alumni Achievement 6">
+                        <img src="assets/images/medals/pranav.png" alt="Pranav V">
                     </div>
                     <div class="alumni-name">Pranav V</div>
                 </div>
             </div>
         </section>
+
+        <!-- Alumni Popup Modal -->
+        <div id="alumniModal" class="alumni-modal" style="display: none;">
+            <div class="alumni-modal-content">
+                <span class="alumni-modal-close" onclick="closeAlumniPopup()">&times;</span>
+                <div class="alumni-modal-body">
+                    <div class="alumni-modal-image">
+                        <img id="modalAlumniImage" src="" alt="Alumni Photo">
+                    </div>
+                    <div class="alumni-modal-info">
+                        <h2 id="modalAlumniName"></h2>
+                        <div class="alumni-detail">
+                            <i class="fas fa-briefcase"></i>
+                            <span id="modalAlumniPosition"></span>
+                        </div>
+                        <div class="alumni-detail">
+                            <i class="fas fa-building"></i>
+                            <span id="modalAlumniCompany"></span>
+                        </div>
+                        <div class="alumni-detail">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span id="modalAlumniYear"></span>
+                        </div>
+                        <div class="alumni-detail">
+                            <i class="fas fa-envelope"></i>
+                            <a id="modalAlumniEmail" href="" style="color: #1e88e5; text-decoration: none;"></a>
+                        </div>
+                        <a id="modalAlumniLinkedIn" href="" target="_blank" class="linkedin-btn">
+                            <i class="fab fa-linkedin"></i> View LinkedIn Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .alumni-modal {
+                position: fixed;
+                z-index: 10000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: auto;
+                background-color: rgba(0,0,0,0.7);
+                animation: fadeIn 0.3s;
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
+            .alumni-modal-content {
+                background-color: #fefefe;
+                margin: 8% auto;
+                padding: 0;
+                border-radius: 12px;
+                width: 90%;
+                max-width: 420px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                animation: slideIn 0.3s;
+                position: relative;
+            }
+
+            @keyframes slideIn {
+                from {
+                    transform: translateY(-50px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+
+            .alumni-modal-close {
+                position: absolute;
+                right: 15px;
+                top: 10px;
+                color: #333;
+                font-size: 28px;
+                font-weight: bold;
+                cursor: pointer;
+                z-index: 1;
+                transition: color 0.3s;
+                background: rgba(255,255,255,0.9);
+                width: 35px;
+                height: 35px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                line-height: 1;
+            }
+
+            .alumni-modal-close:hover {
+                color: #5b1f1f;
+                background: #fff;
+            }
+
+            .alumni-modal-body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 25px;
+            }
+
+            .alumni-modal-image {
+                width: 120px;
+                height: 120px;
+                border-radius: 50%;
+                overflow: hidden;
+                border: 4px solid #5b1f1f;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                margin-bottom: 20px;
+            }
+
+            .alumni-modal-image img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .alumni-modal-info {
+                width: 100%;
+                text-align: center;
+            }
+
+            .alumni-modal-info h2 {
+                color: #333;
+                margin-bottom: 15px;
+                font-size: 1.4rem;
+            }
+
+            .alumni-detail {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 10px;
+                color: #555;
+                font-size: 0.9rem;
+            }
+
+            .alumni-detail i {
+                width: 25px;
+                color: #5b1f1f;
+                font-size: 1rem;
+                margin-right: 5px;
+            }
+
+            .linkedin-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: #0077b5;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 8px;
+                text-decoration: none;
+                font-weight: 500;
+                margin-top: 15px;
+                transition: background 0.3s;
+                font-size: 0.9rem;
+            }
+
+            .linkedin-btn:hover {
+                background: #005885;
+            }
+
+            .linkedin-btn i {
+                font-size: 1.1rem;
+            }
+
+            @media (max-width: 768px) {
+                .alumni-modal-content {
+                    width: 95%;
+                    margin: 15% auto;
+                    max-width: 380px;
+                }
+
+                .alumni-modal-body {
+                    padding: 20px;
+                }
+
+                .alumni-modal-image {
+                    width: 100px;
+                    height: 100px;
+                }
+
+                .alumni-modal-info h2 {
+                    font-size: 1.2rem;
+                }
+            }
+        </style>
+
+        <script>
+            const alumniData = {
+                pavan: {
+                    name: 'Pavan Varahad V',
+                    position: 'Software Developer (Applied AI)',
+                    company: 'Luxoft DXC',
+                    year: 'Graduation Year: 2025',
+                    email: 'pavanvarahad@example.com',
+                    linkedin: 'https://www.linkedin.com/in/pavanvarahad?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app',
+                    image: 'assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2010.09.45_92cc285f.jpg'
+                },
+                khushi: {
+                    name: 'Khushi Patil',
+                    position: 'Co-Founder',
+                    company: 'Covalinx LLC',
+                    year: 'Graduation Year: 2024',
+                    email: 'khushiprakashpatil2003@gmail.com',
+                    linkedin: 'https://www.linkedin.com/in/khushippatil2003?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app',
+                    image: 'assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2014.40.27_3afb5fa0.jpg'
+                },
+                faizan: {
+                    name: 'Md Faizan Khan',
+                    position: 'Co-Founder',
+                    company: 'Covalinx LLC',
+                    year: 'Graduation Year: 2024',
+                    email: 'mdfaizankhan0603@gmail.com',
+                    linkedin: 'https://www.linkedin.com/in/mdfaizankhan003?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app',
+                    image: 'assets/images/medals/WhatsApp%20Image%202025-11-07%20at%2014.40.47_5aec4de6.jpg'
+                },
+                abhishek: {
+                    name: 'Abhishek Belagavi',
+                    position: 'Software Engineer',
+                    company: 'Tech Solutions Inc.',
+                    year: 'Graduation Year: 2023',
+                    email: 'abhishek.belagavi@example.com',
+                    linkedin: 'https://www.linkedin.com/in/abhishekbelagavi',
+                    image: 'assets/images/medals/Abhishek%20Belagavi.png'
+                },
+                asrar: {
+                    name: 'Asrar S. B',
+                    position: 'Data Analyst',
+                    company: 'Analytics Corp',
+                    year: 'Graduation Year: 2023',
+                    email: 'asrar.sb@example.com',
+                    linkedin: 'https://www.linkedin.com/in/asrarsb',
+                    image: 'assets/images/medals/Asrar%20S.%20B.png'
+                },
+                pranav: {
+                    name: 'Pranav V',
+                    position: 'Full Stack Developer',
+                    company: 'Digital Innovations',
+                    year: 'Graduation Year: 2024',
+                    email: 'pranav.v@example.com',
+                    linkedin: 'https://www.linkedin.com/in/pranavv',
+                    image: 'assets/images/medals/pranav.png'
+                }
+            };
+
+            function showAlumniPopup(alumniId) {
+                const alumni = alumniData[alumniId];
+                if (!alumni) return;
+
+                document.getElementById('modalAlumniImage').src = alumni.image;
+                document.getElementById('modalAlumniName').textContent = alumni.name;
+                document.getElementById('modalAlumniPosition').textContent = alumni.position;
+                document.getElementById('modalAlumniCompany').textContent = alumni.company;
+                document.getElementById('modalAlumniYear').textContent = alumni.year;
+                document.getElementById('modalAlumniEmail').textContent = alumni.email;
+                document.getElementById('modalAlumniEmail').href = 'mailto:' + alumni.email;
+                document.getElementById('modalAlumniLinkedIn').href = alumni.linkedin;
+
+                document.getElementById('alumniModal').style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeAlumniPopup() {
+                document.getElementById('alumniModal').style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+
+            // Close modal when clicking outside
+            window.onclick = function(event) {
+                const modal = document.getElementById('alumniModal');
+                if (event.target == modal) {
+                    closeAlumniPopup();
+                }
+            }
+
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    closeAlumniPopup();
+                }
+            });
+        </script>
 
         <!-- Proud Alumni Section -->
         <section class="alumni-highlights" style="margin-top: -40px;">
@@ -391,37 +707,37 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
             </div>
             
             <div class="alumni-grid">
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card">
                     <div class="alumni-avatar">
                         <img src="assets/images/medals/PRAJWAL%20NAYAK%20.png" alt="Prajwal Nayak">
                     </div>
                     <div class="alumni-name">Prajwal Nayak</div>
                 </div>
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card">
                     <div class="alumni-avatar">
                         <img src="assets/images/medals/UDAY%20V%20HARIHAR%20.png" alt="Uday V Harihar">
                     </div>
                     <div class="alumni-name">Uday V Harihar</div>
                 </div>
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card">
                     <div class="alumni-avatar">
                         <img src="assets/images/medals/SHREEGANESHA%20G%20J%20.png" alt="Shreeganesha G J">
                     </div>
                     <div class="alumni-name">Shreeganesha G J</div>
                 </div>
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card">
                     <div class="alumni-avatar">
                         <img src="assets/images/medals/KRUSHI%20D%20.png" alt="Krushi D">
                     </div>
                     <div class="alumni-name">Krushi D</div>
                 </div>
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card">
                     <div class="alumni-avatar">
                         <img src="assets/images/medals/SHEETAL%20S%20V%20.png" alt="Sheetal S V">
                     </div>
                     <div class="alumni-name">Sheetal S V</div>
                 </div>
-                <div class="alumni-card" onclick="location.href='pages/directory.php'">
+                <div class="alumni-card">
                     <div class="alumni-avatar">
                         <img src="assets/images/medals/PRAVEEN%20D%20.png" alt="Praveen D">
                     </div>
@@ -460,9 +776,24 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                     ];
                     $imageIndex = 0;
                     
+                    // Get current user's memberships
+                    $userMemberships = [];
+                    if (isset($_SESSION['user_id'])) {
+                        try {
+                            $memberStmt = $pdo->prepare("SELECT group_id FROM group_members WHERE user_id = ?");
+                            $memberStmt->execute([$_SESSION['user_id']]);
+                            while ($row = $memberStmt->fetch()) {
+                                $userMemberships[] = $row['group_id'];
+                            }
+                        } catch (PDOException $e) {
+                            // Table might not exist yet, ignore error
+                        }
+                    }
+                    
                     foreach ($groups as $group):
                         $groupImage = !empty($group['group_image']) ? $group['group_image'] : $defaultImages[$imageIndex % count($defaultImages)];
                         $imageIndex++;
+                        $isMember = in_array($group['id'], $userMemberships);
                 ?>
                     <div class="group-card">
                         <div class="group-image">
@@ -471,7 +802,18 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                         <div class="group-content">
                             <h3><?php echo htmlspecialchars($group['name']); ?></h3>
                             <p><?php echo htmlspecialchars($group['description']); ?></p>
-                            <button class="btn" onclick="event.stopPropagation(); showGroupMembers(<?php echo $group['id']; ?>, '<?php echo htmlspecialchars(addslashes($group['name'])); ?>')">View Members</button>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <?php if ($isMember): ?>
+                                    <button class="btn" style="background: #28a745; cursor: default;" disabled>
+                                        <i class="fas fa-check-circle"></i> Joined
+                                    </button>
+                                <?php else: ?>
+                                    <button class="btn btn-join-group" data-group-id="<?php echo $group['id']; ?>" data-group-name="<?php echo htmlspecialchars($group['name']); ?>">
+                                        <i class="fas fa-user-plus"></i> Join Group
+                                    </button>
+                                <?php endif; ?>
+                                <button class="btn btn-secondary" onclick="event.stopPropagation(); showGroupMembers(<?php echo $group['id']; ?>, '<?php echo htmlspecialchars(addslashes($group['name'])); ?>')">View Members</button>
+                            </div>
                         </div>
                     </div>
                 <?php 
@@ -1100,3 +1442,64 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
     </style>
 </body>
 </html>
+
+<script>
+// Join Group functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const joinButtons = document.querySelectorAll('.btn-join-group');
+    
+    joinButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const groupId = this.getAttribute('data-group-id');
+            const groupName = this.getAttribute('data-group-name');
+            const userId = <?php echo isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0; ?>;
+            
+            if (!userId) {
+                alert('Please log in to join groups');
+                return;
+            }
+            
+            // Disable button and show loading
+            const originalHTML = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Joining...';
+            
+            // Send join request
+            fetch('/alumni/api/groups/join.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    group_id: groupId,
+                    user_id: userId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update button to show joined state
+                    this.innerHTML = '<i class="fas fa-check-circle"></i> Joined';
+                    this.style.background = '#28a745';
+                    this.style.cursor = 'default';
+                    
+                    // Show success message
+                    alert('Successfully joined ' + groupName + '!');
+                } else {
+                    // Restore button
+                    this.disabled = false;
+                    this.innerHTML = originalHTML;
+                    alert(data.message || 'Failed to join group');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.disabled = false;
+                this.innerHTML = originalHTML;
+                alert('An error occurred. Please try again.');
+            });
+        });
+    });
+});
+</script>

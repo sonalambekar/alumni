@@ -1,0 +1,75 @@
+name: gmu_alumni
+description: GMU Alumni Connect Mobile Application
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # UI & Design
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.0
+  photo_view: ^0.14.0
+  shimmer: ^3.0.0
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Networking
+  http: ^1.1.0
+  dio: ^5.4.0
+  
+  # Storage
+  shared_preferences: ^2.2.2
+  
+  # Navigation
+  go_router: ^12.1.3
+  
+  # Maps & Location
+  google_maps_flutter: ^2.5.0
+  geolocator: ^10.1.0
+  geocoding: ^2.1.1
+  
+  # Image Handling
+  image_picker: ^1.0.5
+  
+  # File Handling
+  path_provider: ^2.1.1
+  open_file: ^3.3.2
+  file_picker: ^6.1.1
+  
+  # URL Launcher
+  url_launcher: ^6.2.2
+  
+  # Date & Time
+  intl: ^0.18.1
+  
+  # Notifications
+  flutter_local_notifications: ^16.3.0
+  
+  # Calendar
+  add_2_calendar: ^3.0.1
+  
+  # Share
+  share_plus: ^7.2.1
+  
+  # Connectivity
+  connectivity_plus: ^5.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/

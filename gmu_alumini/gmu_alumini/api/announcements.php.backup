@@ -1,0 +1,132 @@
+<?php
+session_start();
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+require_once "../config/database.php";
+
+class AnnouncementsAPI {
+    private $db;
+
+    public function __construct() {
+        $database = new Database();
+        $this->db = $database->getConnection();
+    }
+
+    public function getAnnouncements($limit = 20, $offset = 0) {
+        try {
+            $query = "SELECT a.*, u.name as director_name, u.profile_picture as director_profile_picture
+                      FROM announcements a
+                      JOIN users u ON a.director_id = u.id
+                      ORDER BY a.created_at DESC
+                      LIMIT :limit OFFSET :offset";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(":limit", $limit, PDO::PARAM_INT);
+            $stmt->bindParam(":offset", $offset, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $announcements = [];
+            while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $announcements[] = [
+                    'id' => $row['id'],
+                    'director_id' => $row['director_id'],
+                    'title' => $row['title'],
+                    'content' => $row['content'],
+                    'created_at' => $row['created_at'],
+                    'director_name' => $row['director_name'],
+                    'director_profile_picture' => $row['director_profile_picture'] ?: 'default.jpg'
+                ];
+            }
+
+            return [
+                'success' => true,
+                'announcements' => $announcements
+            ];
+        } catch(PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function createAnnouncement($title, $content, $director_id = null) {
+        try {
+            // Get director ID from parameter or session
+            $current_director_id = $director_id ?? $_SESSION['user_id'] ?? null;
+            
+            if (!$current_director_id) {
+                return [
+                    'success' => false,
+                    'message' => 'Director not authenticated'
+                ];
+            }
+            
+            $query = "INSERT INTO announcements (director_id, title, content) VALUES (:director_id, :title, :content)";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(":director_id", $current_director_id);
+            $stmt->bindParam(":title", $title);
+            $stmt->bindParam(":content", $content);
+            $stmt->execute();
+
+            return [
+                'success' => true,
+                'message' => 'Announcement created successfully',
+                'announcement_id' => $this->db->lastInsertId()
+            ];
+        } catch(PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
+    }
+}
+
+$announcementsAPI = new AnnouncementsAPI();
+
+// Handle different HTTP methods
+$method = $_SERVER['REQUEST_METHOD'];
+$input = json_decode(file_get_contents('php://input'), true);
+
+switch($method) {
+    case 'GET':
+        if(isset($_GET['action'])) {
+            switch($_GET['action']) {
+                case 'get_announcements':
+                    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+                    $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+                    $result = $announcementsAPI->getAnnouncements($limit, $offset);
+                    break;
+                default:
+                    $result = ['success' => false, 'message' => 'Invalid action'];
+            }
+        } else {
+            $result = ['success' => false, 'message' => 'No action specified'];
+        }
+        break;
+
+    case 'POST':
+        if(isset($input['action'])) {
+            switch($input['action']) {
+                case 'create_announcement':
+                    $director_id = $input['director_id'] ?? $_SESSION['user_id'] ?? null;
+                    $result = $announcementsAPI->createAnnouncement($input['title'], $input['content'], $director_id);
+                    break;
+                default:
+                    $result = ['success' => false, 'message' => 'Invalid action'];
+            }
+        } else {
+            $result = ['success' => false, 'message' => 'No action specified'];
+        }
+        break;
+
+    default:
+        $result = ['success' => false, 'message' => 'Method not allowed'];
+}
+
+echo json_encode($result);
+?>

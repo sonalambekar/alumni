@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require_once '../includes/db_config.php';
+require_once __DIR__ . '/includes/db_config.php';
 
 // Check if group ID is provided
 if (!isset($_GET['group_id']) || !is_numeric($_GET['group_id'])) {

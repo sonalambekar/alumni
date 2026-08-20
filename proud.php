@@ -92,12 +92,13 @@ $pageTitle = 'Proud Alumni';
         .alumni-image img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            background-color: #f5f5f5;
             transition: transform 0.5s ease;
         }
 
         .alumni-card:hover .alumni-image img {
-            transform: scale(1.05);
+            transform: scale(1.02);
         }
 
         .alumni-content {
@@ -183,31 +184,21 @@ $pageTitle = 'Proud Alumni';
 
         <div class="container">
             <div class="alumni-container">
+                <!-- Alumni 1 - Virupaksha Gupta -->
                 <div class="alumni-card">
                     <div class="alumni-image">
-                        <img src="assets/images/proud/Milind.png" alt="Milind DM">
+                        <img src="assets/images/proud/VIRUPAKSHA GUPTA.jpeg" alt="Virupaksha Gupta">
                     </div>
                     <div class="alumni-content">
-                        <h2 class="alumni-name">Milind DM</h2>
-                        <span class="alumni-year">2020 Output</span>
+                        <h2 class="alumni-name">Virupaksha Gupta</h2>
+                        <span class="alumni-year">Output</span>
                         <p class="alumni-description">
-                            Pursued his passion for science with a BE Biotechnology, a fusion of all sciences. Currently working in Biocon Biologics Ltd as an executive in the upstream production department for PEG-GCSF. Worked in Shilpa Biologicals Private ltd, Dharwad as a trainee in production department in microbial fermentation upstream process for Recombinant Human Albumin & Zycov-D corona vaccine. Worked as student intern in Karnataka Antibiotics and Pharmaceuticals limited, Banglore.
+                            AI Engineer at Microsoft with expertise in LLMs, Azure, and Agentic AI. Previously worked at Daimler Trucks, bringing extensive experience in artificial intelligence and machine learning. Winner of Analytica_25 and Smart India Hackathon 2022, and secured silver medal at LatentView ML Hackathon. A 3× NPTEL Topper demonstrating exceptional academic excellence. Specializes in Python programming, Large Language Models, Azure cloud services, and cutting-edge Agentic AI technologies. Passionate about leveraging AI to solve complex real-world problems and drive innovation in the tech industry.
                         </p>
                     </div>
                 </div>
-                <div class="alumni-card">
-                    <div class="alumni-image">
-                        <img src="assets/images/proud/sindhu.png" alt="Sindhu S Patil">
-                    </div>
-                    <div class="alumni-content">
-                        <h2 class="alumni-name">Sindhu S Patil</h2>
-                        <span class="alumni-year">2016 Output</span>
-                        <p class="alumni-description">
-                            Dedicated Advocate enrolled with the Karnataka State Bar Council, adept in communication and administration. Skilled in trademark drafting and prosecution across India and the US. Proficient in conducting IP searches and ensuring compliance. Expert in managing prosecution proceedings and client IP profiles with meticulous attention to deadlines. Actively contributes to idea generation and innovation. Experienced in attending arbitration hearings and drafting legal contracts. Interned with various legal offices during LLB and LLM studies. Specialized in Intellectual Property Rights, Corporate Law, Criminal Law, Legal Research, and Drafting. Passionate about leveraging legal expertise to serve clients effectively and uphold justice.
-                        </p>
-                    </div>
-                </div>
-                <!-- Alumni 1 -->
+
+                <!-- Alumni 2 -->
                 <div class="alumni-card">
                     <div class="alumni-image">
                         <img src="assets/images/proud/Manjunath.png" alt="Dr. Manjunatha Thondamal">
@@ -221,7 +212,7 @@ $pageTitle = 'Proud Alumni';
                     </div>
                 </div>
 
-                <!-- Alumni 2 -->
+                <!-- Alumni 3 -->
                 <div class="alumni-card">
                     <div class="alumni-image">
                         <img src="assets/images/proud/Anshu.png" alt="Dr. Anshu Alok">
@@ -235,7 +226,31 @@ $pageTitle = 'Proud Alumni';
                     </div>
                 </div>
 
-                <!-- Alumni 3 -->
+                <div class="alumni-card">
+                    <div class="alumni-image">
+                        <img src="assets/images/proud/Milind.png" alt="Milind DM">
+                    </div>
+                    <div class="alumni-content">
+                        <h2 class="alumni-name">Milind DM</h2>
+                        <span class="alumni-year">2020 Output</span>
+                        <p class="alumni-description">
+                            Pursued his passion for science with a BE Biotechnology, a fusion of all sciences. Currently working in Biocon Biologics Ltd as an executive in the upstream production department for PEG-GCSF. Worked in Shilpa Biologicals Private ltd, Dharwad as a trainee in production department in microbial fermentation upstream process for Recombinant Human Albumin & Zycov-D corona vaccine. Worked as student intern in Karnataka Antibiotics and Pharmaceuticals limited, Banglore.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="alumni-card">
+                    <div class="alumni-image">
+                        <img src="assets/images/proud/sindhu.png" alt="Sindhu S Patil">
+                    </div>
+                    <div class="alumni-content">
+                        <h2 class="alumni-name">Sindhu S Patil</h2>
+                        <span class="alumni-year">2016 Output</span>
+                        <p class="alumni-description">
+                            Dedicated Advocate enrolled with the Karnataka State Bar Council, adept in communication and administration. Skilled in trademark drafting and prosecution across India and the US. Proficient in conducting IP searches and ensuring compliance. Expert in managing prosecution proceedings and client IP profiles with meticulous attention to deadlines. Actively contributes to idea generation and innovation. Experienced in attending arbitration hearings and drafting legal contracts. Interned with various legal offices during LLB and LLM studies. Specialized in Intellectual Property Rights, Corporate Law, Criminal Law, Legal Research, and Drafting. Passionate about leveraging legal expertise to serve clients effectively and uphold justice.
+                        </p>
+                    </div>
+                </div>
 
                 
             </div>

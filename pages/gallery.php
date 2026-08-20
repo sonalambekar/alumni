@@ -163,140 +163,76 @@ require_once '../includes/db_config.php';
                 <p>Relive the cherished moments and create new memories with our alumni community</p>
             </div>
 
+            <?php
+            // Get all images from the gallery folder
+            $galleryImagesDir = '../assets/images/gallery/';
+            $galleryImages = [];
+            if (is_dir($galleryImagesDir)) {
+                $files = scandir($galleryImagesDir);
+                foreach ($files as $file) {
+                    if ($file !== '.' && $file !== '..' && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $file)) {
+                        $galleryImages[] = $file;
+                    }
+                }
+            }
+            
+            // Split images into categories
+            $imagesPerCategory = ceil(count($galleryImages) / 3);
+            $graduationImages = array_slice($galleryImages, 0, $imagesPerCategory);
+            $campusImages = array_slice($galleryImages, $imagesPerCategory, $imagesPerCategory);
+            $sportsImages = array_slice($galleryImages, $imagesPerCategory * 2);
+            ?>
+
+            <?php if (!empty($graduationImages)): ?>
             <div class="gallery-category">
                 <h2><i class="fas fa-graduation-cap"></i> Graduation Ceremonies</h2>
                 <div class="gallery-grid">
+                    <?php foreach ($graduationImages as $index => $image): ?>
                     <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Graduation Day">
+                        <img src="<?php echo htmlspecialchars($galleryImagesDir . $image); ?>" alt="Graduation Event">
                         <div class="gallery-caption">
-                            <h3>Class of 2023</h3>
-                            <p>Graduation ceremony at the main auditorium</p>
+                            <h3>Graduation Ceremony</h3>
+                            <p>Alumni celebration moments</p>
                         </div>
                     </div>
-
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1541178735493-479c1a27ed24?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1171&q=80" alt="Caps in the Air">
-                        <div class="gallery-caption">
-                            <h3>Moment of Achievement</h3>
-                            <p>Celebrating academic success</p>
-                        </div>
-                    </div>
-
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Graduation Portrait">
-                        <div class="gallery-caption">
-                            <h3>Alumni Portraits</h3>
-                            <p>Class of 2023 graduates</p>
-                        </div>
-                    </div>
-
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1523050853548-9860ac796eb3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Diploma Ceremony">
-                        <div class="gallery-caption">
-                            <h3>Diploma Ceremony</h3>
-                            <p>Receiving the hard-earned degrees</p>
-                        </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
+            <?php endif; ?>
 
+            <?php if (!empty($campusImages)): ?>
             <div class="gallery-category">
                 <h2><i class="fas fa-users"></i> Campus Life</h2>
                 <div class="gallery-grid">
+                    <?php foreach ($campusImages as $index => $image): ?>
                     <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Campus Building">
+                        <img src="<?php echo htmlspecialchars($galleryImagesDir . $image); ?>" alt="Campus Life">
                         <div class="gallery-caption">
-                            <h3>Historic Campus</h3>
-                            <p>Our beautiful campus in spring</p>
+                            <h3>Campus Memories</h3>
+                            <p>Life at our university</p>
                         </div>
                     </div>
-
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Library">
-                        <div class="gallery-caption">
-                            <h3>University Library</h3>
-                            <p>Where knowledge meets inspiration</p>
-                        </div>
-                    </div>
-
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Cafeteria">
-                        <div class="gallery-caption">
-                            <h3>Student Center</h3>
-                            <p>Social hub of the university</p>
-                        </div>
-                    </div>
-
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Research Lab">
-                        <div class="gallery-caption">
-                            <h3>Research Facilities</h3>
-                            <p>State-of-the-art laboratories</p>
-                        </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
+            <?php endif; ?>
 
+            <?php if (!empty($sportsImages)): ?>
             <div class="gallery-category">
                 <h2><i class="fas fa-trophy"></i> Sports & Events</h2>
                 <div class="gallery-grid">
+                    <?php foreach ($sportsImages as $index => $image): ?>
                     <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?ixlib=rb-4.0.3&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1105&q=80" alt="Basketball Game">
+                        <img src="<?php echo htmlspecialchars($galleryImagesDir . $image); ?>" alt="Sports & Events">
                         <div class="gallery-caption">
-                            <h3>Basketball Finals</h3>
-                            <p>Intense match against rival college</p>
+                            <h3>Alumni Events</h3>
+                            <p>Sports and special occasions</p>
                         </div>
                     </div>
-
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1543351611-58f69d7c1781?ixlib=rb-4.0.3&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80" alt="Soccer Match">
-                        <div class="gallery-caption">
-                            <h3>Soccer Championship</h3>
-                            <p>Victory celebration with the team</p>
-                        </div>
-                    </div>
-
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1543351611-58f69d7c1781?ixlib=rb-4.0.3&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80" alt="Track & Field">
-                        <div class="gallery-caption">
-                            <h3>Annual Sports Meet</h3>
-                            <p>Celebrating athletic excellence</p>
-                        </div>
-                    </div>
-
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1543351611-58f69d7c1781?ixlib=rb-4.0.3&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80" alt="Cultural Fest">
-                        <div class="gallery-caption">
-                            <h3>Cultural Festival</h3>
-                            <p>Showcasing talent and diversity</p>
-                        </div>
-                    </div>
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?ixlib=rb-4.0.3&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1005&q=80" alt="Basketball Game">
-                        <img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1005&q=80" alt="Basketball Game">
-                        <div class="gallery-caption">
-                            <h3>Basketball Finals</h3>
-                            <p>2023 Inter-University Championship</p>
-                        </div>
-                    </div>
-
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195d86?ixlib=rb-4.0.3&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80" alt="Soccer Match">
-                        <div class="gallery-caption">
-                            <h3>Soccer Tournament</h3>
-                            <p>Annual inter-college competition</p>
-                        </div>
-                    </div>
-
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1517649763962-0c2a416d70e3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Track & Field">
-                        <div class="gallery-caption">
-                            <h3>Track & Field</h3>
-                            <p>Annual sports meet 2023</p>
-                        </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 

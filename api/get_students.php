@@ -7,7 +7,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // Database connection
-require_once '../includes/db_config.php';
+require_once __DIR__ . '/includes/db_config.php';
 
 // Get mentor_id from query parameters
 $mentor_id = isset($_GET['mentor_id']) ? intval($_GET['mentor_id']) : 0;

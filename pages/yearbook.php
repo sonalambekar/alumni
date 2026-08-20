@@ -17,11 +17,13 @@
 
         <div style="padding: 60px 40px; background-color: var(--bg-light); min-height: 60vh; display: flex; align-items: center; justify-content: center;">
             <div style="text-align: center; max-width: 600px;">
-                <h2 style="color: var(--primary-color); font-size: 32px; margin-bottom: 20px;">Quarterly News Letter</h2>
+                <h2 style="color: var(--primary-color); font-size: 32px; margin-bottom: 20px;">GMU Times - A Quarterly Campus Magazine</h2>
                 <p style="color: var(--text-light); font-size: 16px; line-height: 1.8; margin-bottom: 30px;">
-                    Explore Quarterly News Letter.
+                    Stay updated with the latest news, events, and achievements from GM University through our quarterly campus magazine.
                 </p>
-                <button class="btn">Browse News Letter</button>
+                <a href="https://gmu.ac.in/quarterly_magazine" target="_blank" class="btn" style="display: inline-block; text-decoration: none;">
+                    <i class="fas fa-newspaper" style="margin-right: 8px;"></i>Browse GMU Times
+                </a>
             </div>
         </div>
     </div>

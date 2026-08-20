@@ -194,7 +194,7 @@ try {
         }
 
         /* Dropdown Styles */
-        .has-dropdown > .nav-link {
+        .has-dropdown>.nav-link {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -307,6 +307,18 @@ try {
             </li>
 
             <li class="nav-item">
+                <a href="/alumni/pages/core.php" class="nav-link">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <span class="nav-text">Core Team</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
                 <a href="/alumni/pages/noticeboard_new.php" class="nav-link">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -322,7 +334,9 @@ try {
             <li class="nav-item">
                 <a href="/alumni/pages/news.php" class="nav-link">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+                        <path
+                            d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z">
+                        </path>
                     </svg>
                     <span class="nav-text">News Corner</span>
                 </a>
@@ -357,7 +371,8 @@ try {
                     <li><a href="/alumni/pages/directory.php">Directory</a></li>
                     <li><a href="/alumni/pages/members-nearby.php">Members Nearby</a></li>
                     <li><a href="/alumni/pages/yearbook.php">Quarterly News Letter</a></li>
-                    <li><a href="/alumni/pages/institute_scholarship.php"><i class="fas fa-graduation-cap" style="margin-right: 5px;"></i>Institute Scholarship</a></li>
+                    <li><a href="/alumni/pages/institute_scholarship.php"><i class="fas fa-graduation-cap"
+                                style="margin-right: 5px;"></i>Institute Scholarship</a></li>
                 </ul>
             </li>
 
@@ -425,43 +440,45 @@ try {
             <?php
             // Show admin panel only if user is logged in as admin
             if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'admin'):
-            ?>
-            <li class="nav-item has-dropdown">
-                <a href="#" class="nav-link dropdown-toggle">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 1l3 6 6 3-6 3-3 6-3-6-6-3 6-3z"></path>
-                    </svg>
-                    <span class="nav-text">Admin Panel</span>
-                    <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </a>
-                <ul class="dropdown-menu">
-                    <li><a href="/alumni/admin/admin_dashboard.php">Dashboard</a></li>
-                    <li><a href="/alumni/admin/manage_noticeboard.php">Noticeboard</a></li>
-                    <li><a href="/alumni/admin/manage_news.php">News</a></li>
-                    <li><a href="/alumni/admin/manage_events.php">Events</a></li>
-                    <li><a href="/alumni/admin/manage_jobs.php">Jobs</a></li>
-                    <li><a href="/alumni/admin/manage_galleries.php">Photo Galleries</a></li>
-                    <li><a href="/alumni/admin/manage_groups.php">Interest Groups</a></li>
-                    <li><a href="/alumni/admin/manage_users.php">User Management</a></li>
-                    <li><a href="/alumni/logout.php">Logout</a></li>
-                </ul>
-            </li>
+                ?>
+                <li class="nav-item has-dropdown">
+                    <a href="#" class="nav-link dropdown-toggle">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1l3 6 6 3-6 3-3 6-3-6-6-3 6-3z"></path>
+                        </svg>
+                        <span class="nav-text">Admin Panel</span>
+                        <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/alumni/admin/admin_dashboard.php">Dashboard</a></li>
+                        <li><a href="/alumni/admin/manage_noticeboard.php">Noticeboard</a></li>
+                        <li><a href="/alumni/admin/manage_news.php">News</a></li>
+                        <li><a href="/alumni/admin/manage_events.php">Events</a></li>
+                        <li><a href="/alumni/admin/manage_jobs.php">Jobs</a></li>
+                        <li><a href="/alumni/admin/manage_galleries.php">Photo Galleries</a></li>
+                        <li><a href="/alumni/admin/manage_groups.php">Interest Groups</a></li>
+                        <li><a href="/alumni/admin/manage_users.php">User Management</a></li>
+                        <li><a href="/alumni/logout.php">Logout</a></li>
+                    </ul>
+                </li>
             <?php endif; ?>
         </ul>
-        
+
         <!-- Profile Section -->
         <?php if (isLoggedIn()): ?>
-        <?php $user = getCurrentUser(); ?>
-        <div class="profile-section" style="margin-top: auto; padding: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-            <a href="/alumni/pages/profile.php" class="nav-link" style="padding: 10px 16px;">
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; margin-right: 12px; flex-shrink: 0;">
-                        <img src="<?php 
+            <?php $user = getCurrentUser(); ?>
+            <div class="profile-section"
+                style="margin-top: auto; padding: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                <a href="/alumni/pages/profile.php" class="nav-link" style="padding: 10px 16px;">
+                    <div style="display: flex; align-items: center;">
+                        <div
+                            style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; margin-right: 12px; flex-shrink: 0;">
+                            <img src="<?php
                             $userName = $user['name'] ?? 'User';
                             $defaultAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($userName) . '&size=200&background=5b1f1f&color=fff';
-                            
+
                             if (!empty($user['profile_picture'])) {
                                 // Check if it's a full URL or a relative path
                                 if (filter_var($user['profile_picture'], FILTER_VALIDATE_URL)) {
@@ -477,17 +494,19 @@ try {
                             } else {
                                 echo $defaultAvatar;
                             }
-                        ?>" 
-                             alt="Profile" 
-                             style="width: 100%; height: 100%; object-fit: cover;">
+                            ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div style="overflow: hidden;">
+                            <div
+                                style="font-weight: 500; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <?php echo htmlspecialchars($user['name'] ?? 'User'); ?></div>
+                            <div
+                                style="font-size: 12px; color: rgba(255, 255, 255, 0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                View Profile</div>
+                        </div>
                     </div>
-                    <div style="overflow: hidden;">
-                        <div style="font-weight: 500; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?php echo htmlspecialchars($user['name'] ?? 'User'); ?></div>
-                        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">View Profile</div>
-                    </div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
         <?php endif; ?>
     </nav>
 </div>
@@ -500,7 +519,7 @@ try {
     console.log('🔧 Sidebar script loaded!');
     console.log('📍 Current page:', window.location.href);
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         console.log('🎯 DOM Content Loaded - Sidebar initializing');
 
         const sidebarToggle = document.getElementById('sidebarToggle');
@@ -516,7 +535,7 @@ try {
 
         // Toggle sidebar when hamburger is clicked
         if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', function() {
+            sidebarToggle.addEventListener('click', function () {
                 sidebar.classList.toggle('active');
                 if (sidebarOverlay) {
                     sidebarOverlay.classList.toggle('active');
@@ -526,7 +545,7 @@ try {
 
         // Close sidebar when overlay is clicked
         if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', function() {
+            sidebarOverlay.addEventListener('click', function () {
                 sidebar.classList.remove('active');
                 this.classList.remove('active');
             });
@@ -534,7 +553,7 @@ try {
 
         // Handle dropdown toggles
         dropdownToggles.forEach(toggle => {
-            toggle.addEventListener('click', function(e) {
+            toggle.addEventListener('click', function (e) {
                 e.preventDefault();
                 const parentItem = this.closest('.has-dropdown');
                 parentItem.classList.toggle('active');

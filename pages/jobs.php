@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_job'])) {
     try {
         // Check if user is admin
         $isAdmin = isset($currentUser['is_admin']) && $currentUser['is_admin'] == 1;
-        
+
         // Prepare the SQL query based on user role
         if ($isAdmin) {
             // For admin, directly insert as approved
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_job'])) {
             $success = "Job posted successfully! It will be visible after admin approval.";
         }
         // No need for this else block as we've handled both cases above
-        
+
         // Redirect to prevent form resubmission
         header('Location: jobs.php?success=1');
         exit();
@@ -128,6 +128,7 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -766,6 +767,7 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     </style>
 </head>
+
 <body>
     <?php include '../sidebar.php'; ?>
 
@@ -795,46 +797,52 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="search-bar">
                     <div class="search-input-wrapper">
                         <i class="fas fa-search search-icon"></i>
-                        <input 
-                            type="text" 
-                            name="search" 
-                            class="search-input" 
+                        <input type="text" name="search" class="search-input"
                             placeholder="Search by job title, company, or keywords..."
-                            value="<?php echo htmlspecialchars($search); ?>"
-                        >
+                            value="<?php echo htmlspecialchars($search); ?>">
                     </div>
                     <button type="submit" class="search-btn">
                         <i class="fas fa-search"></i> Search
                     </button>
                 </div>
-                
+
                 <div class="filters">
                     <select class="filter-select" name="location">
                         <option value="">📍 All Locations</option>
-                        <option value="Bengaluru" <?php echo $location === 'Bengaluru' ? 'selected' : ''; ?>>Bengaluru</option>
+                        <option value="Bengaluru" <?php echo $location === 'Bengaluru' ? 'selected' : ''; ?>>Bengaluru
+                        </option>
                         <option value="Mumbai" <?php echo $location === 'Mumbai' ? 'selected' : ''; ?>>Mumbai</option>
                         <option value="Delhi" <?php echo $location === 'Delhi' ? 'selected' : ''; ?>>Delhi</option>
-                        <option value="Hyderabad" <?php echo $location === 'Hyderabad' ? 'selected' : ''; ?>>Hyderabad</option>
+                        <option value="Hyderabad" <?php echo $location === 'Hyderabad' ? 'selected' : ''; ?>>Hyderabad
+                        </option>
                         <option value="Pune" <?php echo $location === 'Pune' ? 'selected' : ''; ?>>Pune</option>
                         <option value="Remote" <?php echo $location === 'Remote' ? 'selected' : ''; ?>>Remote</option>
                     </select>
-                    
+
                     <select class="filter-select" name="job_type">
                         <option value="">💼 All Job Types</option>
-                        <option value="Full-time" <?php echo $jobType === 'Full-time' ? 'selected' : ''; ?>>Full-time</option>
-                        <option value="Part-time" <?php echo $jobType === 'Part-time' ? 'selected' : ''; ?>>Part-time</option>
-                        <option value="Contract" <?php echo $jobType === 'Contract' ? 'selected' : ''; ?>>Contract</option>
-                        <option value="Internship" <?php echo $jobType === 'Internship' ? 'selected' : ''; ?>>Internship</option>
+                        <option value="Full-time" <?php echo $jobType === 'Full-time' ? 'selected' : ''; ?>>Full-time
+                        </option>
+                        <option value="Part-time" <?php echo $jobType === 'Part-time' ? 'selected' : ''; ?>>Part-time
+                        </option>
+                        <option value="Contract" <?php echo $jobType === 'Contract' ? 'selected' : ''; ?>>Contract
+                        </option>
+                        <option value="Internship" <?php echo $jobType === 'Internship' ? 'selected' : ''; ?>>Internship
+                        </option>
                     </select>
-                    
+
                     <select class="filter-select" name="experience">
                         <option value="">📊 Experience Level</option>
-                        <option value="Entry Level" <?php echo $experience === 'Entry Level' ? 'selected' : ''; ?>>Entry Level</option>
-                        <option value="Mid Level" <?php echo $experience === 'Mid Level' ? 'selected' : ''; ?>>Mid Level</option>
-                        <option value="Senior Level" <?php echo $experience === 'Senior Level' ? 'selected' : ''; ?>>Senior Level</option>
-                        <option value="Executive" <?php echo $experience === 'Executive' ? 'selected' : ''; ?>>Executive</option>
+                        <option value="Entry Level" <?php echo $experience === 'Entry Level' ? 'selected' : ''; ?>>Entry
+                            Level</option>
+                        <option value="Mid Level" <?php echo $experience === 'Mid Level' ? 'selected' : ''; ?>>Mid Level
+                        </option>
+                        <option value="Senior Level" <?php echo $experience === 'Senior Level' ? 'selected' : ''; ?>>
+                            Senior Level</option>
+                        <option value="Executive" <?php echo $experience === 'Executive' ? 'selected' : ''; ?>>Executive
+                        </option>
                     </select>
-                    
+
                     <a href="jobs.php" class="reset-btn">
                         <i class="fas fa-undo"></i> Reset Filters
                     </a>
@@ -848,7 +856,8 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="no-jobs">
                     <i class="fas fa-briefcase"></i>
                     <h3>No Jobs Available</h3>
-                    <p>There are currently no job postings matching your criteria. Try adjusting your filters or check back later.</p>
+                    <p>There are currently no job postings matching your criteria. Try adjusting your filters or check back
+                        later.</p>
                 </div>
             <?php else: ?>
                 <?php foreach ($jobs as $job): ?>
@@ -859,7 +868,7 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                             <h3 class="job-title"><?php echo htmlspecialchars($job['title']); ?></h3>
                             <div class="company-name"><?php echo htmlspecialchars($job['company']); ?></div>
-                            
+
                             <div class="job-meta">
                                 <?php if (!empty($job['location'])): ?>
                                     <span class="meta-badge">
@@ -867,21 +876,21 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <?php echo htmlspecialchars($job['location']); ?>
                                     </span>
                                 <?php endif; ?>
-                                
+
                                 <?php if (!empty($job['job_type'])): ?>
                                     <span class="meta-badge">
                                         <i class="fas fa-briefcase"></i>
                                         <?php echo htmlspecialchars($job['job_type']); ?>
                                     </span>
                                 <?php endif; ?>
-                                
+
                                 <?php if (!empty($job['experience_level'])): ?>
                                     <span class="meta-badge">
                                         <i class="fas fa-chart-line"></i>
                                         <?php echo htmlspecialchars($job['experience_level']); ?>
                                     </span>
                                 <?php endif; ?>
-                                
+
                                 <?php if (!empty($job['salary_min'])): ?>
                                     <span class="meta-badge">
                                         <i class="fas fa-money-bill-wave"></i>
@@ -890,27 +899,27 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <?php endif; ?>
                             </div>
                         </div>
-                        
+
                         <div class="job-card-body">
                             <?php if (!empty($job['description'])): ?>
                                 <p class="job-description"><?php echo htmlspecialchars($job['description']); ?></p>
                             <?php endif; ?>
-                            
+
                             <?php if (!empty($job['requirements'])): ?>
                                 <div class="requirements-label">Requirements:</div>
                                 <div class="requirements"><?php echo nl2br(htmlspecialchars($job['requirements'])); ?></div>
                             <?php endif; ?>
                         </div>
-                        
+
                         <div class="job-card-footer">
                             <div class="posted-info">
                                 <i class="far fa-clock"></i>
-                                <?php 
+                                <?php
                                 if (!empty($job['posted_at'])) {
                                     $postedDate = new DateTime($job['posted_at']);
                                     $now = new DateTime();
                                     $diff = $now->diff($postedDate);
-                                    
+
                                     if ($diff->days == 0) {
                                         echo 'Today';
                                     } elseif ($diff->days == 1) {
@@ -925,11 +934,9 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 }
                                 ?>
                             </div>
-                            
+
                             <?php if (!empty($job['apply_link'])): ?>
-                                <a href="<?php echo htmlspecialchars($job['apply_link']); ?>" 
-                                   class="apply-btn" 
-                                   target="_blank">
+                                <a href="<?php echo htmlspecialchars($job['apply_link']); ?>" class="apply-btn" target="_blank">
                                     Apply Now <i class="fas fa-arrow-right"></i>
                                 </a>
                             <?php else: ?>
@@ -963,34 +970,35 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <form method="POST" action="" onsubmit="return validateForm()">
                     <div class="form-group">
                         <label for="title">Job Title *</label>
-                        <input type="text" id="title" name="title" class="form-control" 
-                               placeholder="e.g., Senior Software Engineer" required>
+                        <input type="text" id="title" name="title" class="form-control"
+                            placeholder="e.g., Senior Software Engineer" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="company">Company Name *</label>
-                        <input type="text" id="company" name="company" class="form-control" 
-                               placeholder="e.g., Tech Corp Inc." required>
+                        <input type="text" id="company" name="company" class="form-control"
+                            placeholder="e.g., Tech Corp Inc." required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="description">Job Description *</label>
-                        <textarea id="description" name="description" class="form-control" 
-                                  placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..." required></textarea>
+                        <textarea id="description" name="description" class="form-control"
+                            placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..."
+                            required></textarea>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="requirements">Requirements</label>
-                        <textarea id="requirements" name="requirements" class="form-control" 
-                                  placeholder="List the key requirements and qualifications (one per line)"></textarea>
+                        <textarea id="requirements" name="requirements" class="form-control"
+                            placeholder="List the key requirements and qualifications (one per line)"></textarea>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="location">Location *</label>
-                        <input type="text" id="location" name="location" class="form-control" 
-                               placeholder="e.g., Bengaluru, India or Remote" required>
+                        <input type="text" id="location" name="location" class="form-control"
+                            placeholder="e.g., Bengaluru, India or Remote" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="job_type">Job Type *</label>
                         <select id="job_type" name="job_type" class="form-control" required>
@@ -1002,7 +1010,7 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <option value="Temporary">Temporary</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="experience_level">Experience Level *</label>
                         <select id="experience_level" name="experience_level" class="form-control" required>
@@ -1013,19 +1021,19 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <option value="Executive">Executive/Leadership</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="salary_min">Minimum Salary</label>
-                        <input type="text" id="salary_min" name="salary_min" class="form-control" 
-                               placeholder="e.g., ₹8LPA or $60,000">
+                        <input type="text" id="salary_min" name="salary_min" class="form-control"
+                            placeholder="e.g., ₹8LPA or $60,000">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="apply_link">Application Link *</label>
-                        <input type="url" id="apply_link" name="apply_link" class="form-control" 
-                               placeholder="https://example.com/careers/apply" required>
+                        <input type="url" id="apply_link" name="apply_link" class="form-control"
+                            placeholder="https://example.com/careers/apply" required>
                     </div>
-                    
+
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeModal()">
                             Cancel
@@ -1044,7 +1052,7 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
         function openModal() {
             const overlay = document.getElementById('modalOverlay');
             const container = document.getElementById('modalContainer');
-            
+
             if (overlay && container) {
                 document.body.classList.add('modal-open');
                 overlay.classList.add('show');
@@ -1055,12 +1063,12 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
         function closeModal() {
             const overlay = document.getElementById('modalOverlay');
             const container = document.getElementById('modalContainer');
-            
+
             if (overlay && container) {
                 document.body.classList.remove('modal-open');
                 overlay.classList.remove('show');
                 container.classList.remove('show');
-                
+
                 // Reset form
                 const form = container.querySelector('form');
                 if (form) {
@@ -1096,14 +1104,14 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
         // Close modal on Escape key
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 closeModal();
             }
         });
 
         // Auto-hide alerts
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(alert => {
                 setTimeout(() => {
@@ -1116,7 +1124,7 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
             // Auto-resize textareas
             const textareas = document.querySelectorAll('textarea.form-control');
             textareas.forEach(textarea => {
-                textarea.addEventListener('input', function() {
+                textarea.addEventListener('input', function () {
                     this.style.height = 'auto';
                     this.style.height = (this.scrollHeight) + 'px';
                 });
@@ -1124,4 +1132,5 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
         });
     </script>
 </body>
+
 </html>

@@ -18,8 +18,12 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
 
         if ($currentUser) {
             // Set role in session if not already set
-            if (!isset($_SESSION['role']) && $currentUser['is_director'] == 1) {
-                $_SESSION['role'] = 'admin';
+            if (!isset($_SESSION['role'])) {
+                if (isset($currentUser['is_director']) && $currentUser['is_director'] == 1) {
+                    $_SESSION['role'] = 'admin';
+                } elseif (isset($currentUser['is_spoc']) && $currentUser['is_spoc'] == 1) {
+                    $_SESSION['role'] = 'spoc';
+                }
             }
 
             // Check for redirect URL
@@ -27,11 +31,15 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                 $redirect_url = $_SESSION['redirect_url'];
                 unset($_SESSION['redirect_url']);
                 header("Location: $redirect_url");
-            } 
+            }
             // Redirect directors to admin dashboard if no specific redirect
-            else if ($currentUser['is_director'] == 1) {
+            else if (isset($currentUser['is_director']) && $currentUser['is_director'] == 1) {
                 header("Location: /alumni/admin/admin_dashboard.php");
-            } 
+            }
+            // Redirect SPOC to spoc dashboard
+            else if (isset($currentUser['is_spoc']) && $currentUser['is_spoc'] == 1) {
+                header("Location: /alumni/spoc_dashboard.php");
+            }
             // Redirect regular users to the home page
             else {
                 header("Location: /alumni/index.php");
@@ -43,7 +51,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
             session_destroy();
             session_start();
         }
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         error_log("Database error: " . $e->getMessage());
     }
 }
@@ -57,13 +65,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please enter both USN and password.';
     } else {
         try {
-            // Check if user exists in the database
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE usn = ? AND is_active = 1");
+            // Check if user exists regardless of status
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE usn = ?");
             $stmt->execute([$usn]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$user) {
                 $error = "USN not found. Please check your USN.";
+            } elseif ($user['is_active'] == 0) {
+                $error = "Your account is pending approval from your Branch SPOC.";
             } else {
                 if (password_verify($password, $user['password'])) {
                     // Login successful
@@ -76,6 +86,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_SESSION['role'] = 'admin';
                         header("Location: /alumni/admin/admin_dashboard.php");
                         exit();
+                    } elseif (isset($user['is_spoc']) && $user['is_spoc'] == 1) {
+                        $_SESSION['role'] = 'spoc';
+                        header("Location: /alumni/spoc_dashboard.php");
+                        exit();
                     } else {
                         header("Location: /alumni/index.php");
                         exit();
@@ -84,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Incorrect password.';
                 }
             }
-        } catch(PDOException $e) {
+        } catch (PDOException $e) {
             $error = 'Login failed. Please try again.';
             error_log("Login error: " . $e->getMessage());
         }
@@ -96,11 +110,13 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - GM Alumni Network</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -170,9 +186,12 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
         }
 
         @keyframes float {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0) rotate(0deg);
             }
+
             50% {
                 transform: translateY(-20px) rotate(5deg);
             }
@@ -526,6 +545,7 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
         }
     </style>
 </head>
+
 <body>
     <div class="decorative-butterfly butterfly-1">🦋</div>
 
@@ -556,7 +576,8 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
 
                     <div class="form-group">
                         <label for="usn">USN (University Seat Number)</label>
-                        <input type="text" id="usn" name="usn" placeholder="Enter your USN" required value="<?php echo htmlspecialchars($_POST['usn'] ?? ''); ?>">
+                        <input type="text" id="usn" name="usn" placeholder="Enter your USN" required
+                            value="<?php echo htmlspecialchars($_POST['usn'] ?? ''); ?>">
                     </div>
 
                     <div class="form-group">
@@ -567,20 +588,31 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
                     <button type="submit" class="login-btn">
                         <i class="fas fa-sign-in-alt"></i> Sign In
                     </button>
+
+                    <div style="text-align: center; margin-top: 16px;">
+                        <a href="register.php"
+                            style="color: rgba(255,255,255,0.9); text-decoration: none; font-size: 14px; transition: color 0.3s;"
+                            onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.9)'">
+                            Don't have an account? <strong>Register</strong>
+                        </a>
+                    </div>
                 </form>
             <?php else: ?>
                 <!-- User Profile Section -->
                 <div class="profile-section">
                     <div class="profile-header">
                         <div class="profile-avatar">
-                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($currentUser['name']); ?>&background=5b1f1f&color=fff&size=200" alt="Profile" />
+                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($currentUser['name']); ?>&background=5b1f1f&color=fff&size=200"
+                                alt="Profile" />
                         </div>
                         <div class="profile-info">
                             <h2><?php echo htmlspecialchars($currentUser['name']); ?></h2>
                             <p><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($currentUser['email_id']); ?></p>
-                            <p><i class="fas fa-id-card"></i> <strong>USN:</strong> <?php echo htmlspecialchars($currentUser['usn']); ?></p>
+                            <p><i class="fas fa-id-card"></i> <strong>USN:</strong>
+                                <?php echo htmlspecialchars($currentUser['usn']); ?></p>
                             <?php if (!empty($currentUser['designation'])): ?>
-                                <p><i class="fas fa-briefcase"></i> <strong>Role:</strong> <?php echo htmlspecialchars($currentUser['designation']); ?></p>
+                                <p><i class="fas fa-briefcase"></i> <strong>Role:</strong>
+                                    <?php echo htmlspecialchars($currentUser['designation']); ?></p>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -601,7 +633,7 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
         <div class="brand-card">
             <div class="decorative-icon icon-1">🎓</div>
             <div class="decorative-icon icon-2">🦋</div>
-            
+
             <div class="brand-icon">
                 <i class="fas fa-university"></i>
             </div>
@@ -611,9 +643,9 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             console.log('Login page loaded successfully');
-            
+
             // Auto-hide messages after 5 seconds
             const messages = document.querySelectorAll('.error-message, .success-message');
             messages.forEach(msg => {
@@ -626,4 +658,5 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
         });
     </script>
 </body>
+
 </html>

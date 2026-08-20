@@ -600,6 +600,18 @@ foreach ($sampleEvents as $event) {
 <body>
     <?php include '../sidebar.php'; ?>
 
+    <!-- Event Details Modal -->
+    <div id="eventModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative; animation: modalFadeIn 0.3s ease-out;">
+            <button class="close-btn" id="closeModal" style="position: absolute; top: 15px; right: 15px; background: var(--primary-color); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: all 0.3s ease;">
+                &times;
+            </button>
+            <div id="eventDetails">
+                <!-- Event details will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
     <div class="main-content" id="mainContent">
         <div class="events-container">
             <h2 class="page-subtitle">Events Calendar</h2>
@@ -658,13 +670,21 @@ foreach ($sampleEvents as $event) {
             document.addEventListener('click', (e) => {
                 const modal = document.getElementById('eventModal');
                 if (e.target === modal) {
-                    modal.classList.remove('active');
+                    modal.style.display = 'none';
                 }
             });
             
             // Close button
-            document.getElementById('closeEvent').addEventListener('click', () => {
-                document.getElementById('eventModal').classList.remove('active');
+            document.getElementById('closeModal').addEventListener('click', () => {
+                document.getElementById('eventModal').style.display = 'none';
+            });
+            
+            // Close when clicking outside modal
+            window.addEventListener('click', (e) => {
+                const modal = document.getElementById('eventModal');
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
             });
         }
 
@@ -765,27 +785,94 @@ foreach ($sampleEvents as $event) {
             return dayElement;
         }
 
-        // Add click event to calendar days
+        // Add event listeners to days with events
         function addDayClickHandlers() {
             const dayElements = document.querySelectorAll('.calendar-day:not(.other-month)');
             dayElements.forEach(day => {
                 day.addEventListener('click', function() {
-                    const date = this.querySelector('.day-number').textContent;
-                    const month = currentMonth + 1;
+                    const date = this.querySelector('.day-number').textContent.padStart(2, '0');
+                    const month = (currentMonth + 1).toString().padStart(2, '0');
                     const year = currentYear;
-                    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
-                    if (window.events[dateStr] && window.events[dateStr].length > 0) {
-                        showEventDetails(window.events[dateStr]);
-                        // Show the modal
-                        eventDetails.style.display = 'block';
+                    const fullDate = `${year}-${month}-${date}`;
+                    const dayEvents = window.events[fullDate] || [];
+                    
+                    if (dayEvents.length > 0) {
+                        openEventModal(dayEvents);
                     }
                 });
             });
         }
 
+        // Function to open event modal
+        function openEventModal(events) {
+            const modal = document.getElementById('eventModal');
+            const eventDetails = document.getElementById('eventDetails');
+            
+            // Clear previous content
+            eventDetails.innerHTML = '';
+            
+            // Add events to modal
+            if (events && events.length > 0) {
+                const date = new Date(events[0].event_date);
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const formattedDate = date.toLocaleDateString('en-US', options);
+                
+                let html = `<h3>Events on ${formattedDate}</h3>`;
+                
+                events.forEach(event => {
+                    const eventTime = new Date(event.event_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    html += `
+                        <div class="event-item" style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                            <div class="event-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h4 style="margin: 0; color: var(--primary-color);">${event.title}</h4>
+                                <span class="event-type-badge" style="background-color: #f0f0f0; color: #555; padding: 3px 8px; border-radius: 12px; font-size: 12px; text-transform: capitalize;">
+                                    ${event.event_type || 'event'}
+                                </span>
+                            </div>
+                            <div class="event-description" style="margin-top: 10px; color: #555; line-height: 1.5;">
+                                <p style="margin: 5px 0; display: flex; align-items: center;">
+                                    <i class="fas fa-clock" style="margin-right: 8px; color: var(--primary-color);"></i>
+                                    ${eventTime}
+                                </p>
+                                ${event.location ? `
+                                <p style="margin: 5px 0; display: flex; align-items: center;">
+                                    <i class="fas fa-map-marker-alt" style="margin-right: 8px; color: var(--primary-color);"></i>
+                                    ${event.location}
+                                </p>` : ''}
+                                ${event.description ? `
+                                <p style="margin: 10px 0 0; padding-top: 10px; border-top: 1px dashed #ddd;">
+                                    ${event.description}
+                                </p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                eventDetails.innerHTML = html;
+            } else {
+                eventDetails.innerHTML = '<p>No events scheduled for this date.</p>';
+            }
+            
+            // Show the modal
+            modal.style.display = 'flex';
+            
+            // Close modal when clicking the close button
+            document.getElementById('closeModal').onclick = function() {
+                modal.style.display = 'none';
+            };
+            
+            // Close modal when clicking outside the modal content
+            window.onclick = function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            };
+        }
+
+
         // Show event details in modal
         function showEventDetails(eventList) {
-            const eventDetailsContent = document.querySelector('.event-details-content');
+            const eventDetailsContent = document.getElementById('eventDetails');
             if (!eventDetailsContent) return;
             
             eventDetailsContent.innerHTML = '';

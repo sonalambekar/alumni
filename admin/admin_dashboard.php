@@ -92,6 +92,16 @@ try {
         $totalGroups = 0;
     }
 
+    // Pending posts count
+    try {
+        $stmt = $pdo->query("SELECT COUNT(*) as total FROM posts WHERE status = 'pending'");
+        $result = $stmt->fetch();
+        $pendingPosts = $result ? $result['total'] : 0;
+    } catch(PDOException $e) {
+        // Table might not exist yet
+        $pendingPosts = 0;
+    }
+
     // Recent activity (only from existing tables)
     try {
         $activityQueries = [];
@@ -520,6 +530,14 @@ try {
                 <div class="stat-number"><?php echo $totalGroups; ?></div>
                 <div class="stat-label">Interest Groups</div>
             </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #2563eb;">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-number"><?php echo $pendingPosts; ?></div>
+                <div class="stat-label">Pending Posts</div>
+            </div>
         </div>
 
         <!-- Management Cards -->
@@ -536,6 +554,14 @@ try {
                 <h3><i class="fas fa-newspaper"></i> News</h3>
                 <p>Publish news articles and updates about alumni achievements and university happenings.</p>
                 <a href="manage_news.php" class="management-btn">
+                    <i class="fas fa-cog"></i> Manage
+                </a>
+            </div>
+
+            <div class="management-card">
+                <h3><i class="fas fa-check-circle"></i> Approve Posts</h3>
+                <p>Review and approve pending posts from alumni before they appear in the mobile app feed.</p>
+                <a href="approve_posts.php" class="management-btn">
                     <i class="fas fa-cog"></i> Manage
                 </a>
             </div>

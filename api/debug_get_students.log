@@ -1,0 +1,8 @@
+[DEBUG] Request received. Mentor ID: 0
+[ERROR] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.USER_NAME' in 'ON'
+[TRACE] #0 C:\htdocs\alumni\api\get_students.php(48): PDOStatement->execute()
+#1 {main}
+[DEBUG] Request received. Mentor ID: 0
+[ERROR] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.USER_NAME' in 'ON'
+[TRACE] #0 C:\htdocs\alumni\api\get_students.php(48): PDOStatement->execute()
+#1 {main}
