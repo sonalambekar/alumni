@@ -14,6 +14,18 @@ try {
     if (!function_exists('isLoggedIn')) {
         require_once __DIR__ . '/includes/db_config.php';
     }
+    // Fetch unread notifications count
+    $unread_count = 0;
+    if (isset($_SESSION['user_id'])) {
+        try {
+            global $pdo;
+            $notifStmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
+            $notifStmt->execute([$_SESSION['user_id']]);
+            $unread_count = $notifStmt->fetchColumn();
+        } catch (PDOException $e) {
+            // Handle error silently
+        }
+    }
 } catch (Exception $e) {
     // Log error but don't output anything to prevent further header issues
     error_log('Sidebar initialization error: ' . $e->getMessage());
@@ -99,12 +111,12 @@ try {
         }
 
         .sidebar-header {
-            padding: 20px;
+            padding: 15px 20px 5px 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .logo-container {
-            margin-bottom: 15px;
+            margin-bottom: 0;
         }
 
         .logo-text {
@@ -115,7 +127,7 @@ try {
 
         /* Navigation Styles */
         .sidebar-nav {
-            padding: 15px 0;
+            padding: 0;
         }
 
         .nav-list {
@@ -125,14 +137,14 @@ try {
         }
 
         .nav-item {
-            margin: 8px 12px;
+            margin: 4px 12px;
             position: relative;
         }
 
         .nav-link {
             display: flex;
             align-items: center;
-            padding: 12px 16px;
+            padding: 10px 16px;
             color: rgba(255, 255, 255, 0.85);
             text-decoration: none;
             border-radius: 12px;
@@ -191,6 +203,16 @@ try {
             font-size: 14px;
             font-weight: 500;
             white-space: nowrap;
+        }
+
+        .notif-badge-sidebar {
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: auto;
         }
 
         /* Dropdown Styles */
@@ -297,7 +319,7 @@ try {
     <nav class="sidebar-nav">
         <ul class="nav-list">
             <li class="nav-item">
-                <a href="/alumni/index.php" class="nav-link active">
+                <a href="/alumni/index.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                         <polyline points="9 22 9 12 15 12 15 22"></polyline>
@@ -433,7 +455,17 @@ try {
                     </svg>
                 </a>
                 <ul class="dropdown-menu">
-                    <li><a href="/alumni/pages/mentorship.php">Mentorship</a></li>
+                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'student'): ?>
+                        <li><a href="/alumni/pages/mentorship.php">Mentorship</a></li>
+                        <li><a href="/alumni/pages/student_dashboard.php">Connect with Alumni</a></li>
+                    <?php elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'alumni'): ?>
+                        <li><a href="/alumni/pages/mentorship.php">Mentorship</a></li>
+                        <li><a href="/alumni/pages/meeting_requests.php">Meeting Requests</a></li>
+                    <?php else: ?>
+                        <li><a href="/alumni/pages/mentorship.php">Mentorship</a></li>
+                        <li><a href="/alumni/pages/student_dashboard.php">Connect with Alumni</a></li>
+                        <li><a href="/alumni/pages/meeting_requests.php">Meeting Requests</a></li>
+                    <?php endif; ?>
                 </ul>
             </li>
 
@@ -476,7 +508,7 @@ try {
                         <div
                             style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; margin-right: 12px; flex-shrink: 0;">
                             <img src="<?php
-                            $userName = $user['name'] ?? 'User';
+                            $userName = !empty(trim($user['name'])) ? trim($user['name']) : 'User';
                             $defaultAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($userName) . '&size=200&background=5b1f1f&color=fff';
 
                             if (!empty($user['profile_picture'])) {
@@ -487,19 +519,21 @@ try {
                                     // Handle both cases where path might be stored with or without 'attachments/'
                                     $profilePic = $user['profile_picture'];
                                     if (strpos($profilePic, 'attachments/') !== 0) {
-                                        $profilePic = 'attachments/profile_pictures/' . ltrim($profilePic, '/');
+                                        $profilePic = '/alumni/attachments/profile_pictures/' . ltrim($profilePic, '/');
+                                    } else {
+                                        $profilePic = '/alumni/' . ltrim($profilePic, '/');
                                     }
                                     echo htmlspecialchars($profilePic);
                                 }
                             } else {
                                 echo $defaultAvatar;
                             }
-                            ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                            ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='<?php echo $defaultAvatar; ?>'">
                         </div>
                         <div style="overflow: hidden;">
                             <div
                                 style="font-weight: 500; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                <?php echo htmlspecialchars($user['name'] ?? 'User'); ?></div>
+                                <?php echo htmlspecialchars($userName); ?></div>
                             <div
                                 style="font-size: 12px; color: rgba(255, 255, 255, 0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                 View Profile</div>
@@ -555,6 +589,7 @@ try {
         dropdownToggles.forEach(toggle => {
             toggle.addEventListener('click', function (e) {
                 e.preventDefault();
+                e.stopImmediatePropagation();
                 const parentItem = this.closest('.has-dropdown');
                 parentItem.classList.toggle('active');
             });
@@ -563,3 +598,4 @@ try {
         console.log('✅ Sidebar initialization complete');
     });
 </script>
+

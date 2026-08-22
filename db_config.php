@@ -3,7 +3,7 @@
 $host = 'localhost:3306';
 $dbname = 'alumni';
 $username = 'root';
-$password = '';
+$password = '1234';
 
 $connectionAttempts = [
     // Try without password first (XAMPP default)

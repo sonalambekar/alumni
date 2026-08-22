@@ -128,16 +128,6 @@ document.addEventListener('DOMContentLoaded', function() {
         initMapWhenReady();
     } else {
         document.addEventListener('DOMContentLoaded', initMapWhenReady);
-            }
-        }, 100);
-
-        // Timeout after 5 seconds
-        setTimeout(() => {
-            if (typeof L === 'undefined') {
-                console.log('ERROR: Leaflet failed to load after 5 seconds');
-                clearInterval(checkLeaflet);
-            }
-        }, 5000);
     }
 
     // Smooth scroll for anchor links

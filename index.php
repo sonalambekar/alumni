@@ -179,6 +179,15 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
 
     <!-- Fixed Action Buttons -->
     <div class="fixed-actions" style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px; background: white; padding: 5px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'student'): ?>
+            <a href="/alumni/pages/student_dashboard.php" style="background: #ecc35c; color: #5b1f1f; border: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background 0.3s ease;">
+                <i class="fas fa-calendar-alt"></i> Connect with Alumni
+            </a>
+        <?php elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'alumni'): ?>
+            <a href="/alumni/pages/meeting_requests.php" style="background: #ecc35c; color: #5b1f1f; border: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background 0.3s ease;">
+                <i class="fas fa-inbox"></i> Meeting Requests
+            </a>
+        <?php endif; ?>
         <button id="locationBtn" style="background: #5b1f1f; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.3s ease;" onmouseover="this.style.background='#4a1919'" onmouseout="this.style.background='#5b1f1f'">
             <i class="fas fa-map-marker-alt"></i> Share Location
         </button>
@@ -1143,7 +1152,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
                 <div class="footer-section">
                     <h3>Resources</h3>
                     <div class="footer-links">
-                        <a href="pages/mentorship.php">Mentorship Program</a>
+                        <a href="pages/student_dashboard.php">Connect with Alumni</a>
                         <a href="pages/fundraising.php">Support the Fund</a>
                         <a href="pages/yearbook.php">Yearbook</a>
                         <a href="pages/galleries.php">Photo Galleries</a>

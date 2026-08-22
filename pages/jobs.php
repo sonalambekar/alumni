@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_job'])) {
         // Prepare the SQL query based on user role
         if ($isAdmin) {
             // For admin, directly insert as approved
-            $stmt = $pdo->prepare("INSERT INTO jobs (title, company, description, requirements, location, job_type, experience_level, salary_min, apply_link, posted_by, is_approved, posted_at) 
+            $stmt = $pdo->prepare("INSERT INTO jobs (title, company, description, requirements, location, job_type, experience_level, salary_min, apply_link, author_id, is_approved, created_at) 
                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())");
             $stmt->execute([
                 $_POST['title'],
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_job'])) {
             $success = "Job posted and approved successfully!";
         } else {
             // For regular users, insert as pending approval
-            $stmt = $pdo->prepare("INSERT INTO jobs (title, company, description, requirements, location, job_type, experience_level, salary_min, apply_link, posted_by, is_approved, posted_at) 
+            $stmt = $pdo->prepare("INSERT INTO jobs (title, company, description, requirements, location, job_type, experience_level, salary_min, apply_link, author_id, is_approved, created_at) 
                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())");
             $stmt->execute([
                 $_POST['title'],
@@ -120,7 +120,7 @@ if (!empty($where)) {
     $sql .= " AND " . implode(" AND ", $where);
 }
 
-$sql .= " ORDER BY j.posted_at DESC";
+$sql .= " ORDER BY j.created_at DESC";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
@@ -915,8 +915,8 @@ $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="posted-info">
                                 <i class="far fa-clock"></i>
                                 <?php
-                                if (!empty($job['posted_at'])) {
-                                    $postedDate = new DateTime($job['posted_at']);
+                                if (!empty($job['created_at'])) {
+                                    $postedDate = new DateTime($job['created_at']);
                                     $now = new DateTime();
                                     $diff = $now->diff($postedDate);
 

@@ -36,8 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mentor_id']) && isset
             if (empty($studentId)) continue;
             
             try {
-                // Check if student exists in students table
-                $studentStmt = $pdo->prepare("SELECT student_id, name, usn FROM students WHERE student_id = ?");
+                // Verify student exists and fetch details for notification
+                $studentStmt = $pdo->prepare("SELECT id, name, usn FROM users WHERE id = ? AND designation = 'student'");
                 $studentStmt->execute([$studentId]);
                 $student = $studentStmt->fetch(PDO::FETCH_ASSOC);
                 
@@ -100,17 +100,18 @@ $mappedStudents = [];
 if ($currentMentorId > 0) {
     // Fetch all students
     $students = $pdo->query("
-        SELECT student_id as id, name, usn 
-        FROM students 
+        SELECT id, name, usn 
+        FROM users 
+        WHERE designation = 'student'
         ORDER BY name
     ")->fetchAll(PDO::FETCH_ASSOC);
     
     // Fetch already mapped students
     $mappedStudents = $pdo->prepare("
-        SELECT s.student_id as id, s.name, s.usn 
-        FROM students s
-        JOIN mentor_student_mapping m ON s.student_id = m.student_id
-        WHERE m.mentor_id = ?
+        SELECT s.id, s.name, s.usn 
+        FROM users s
+        JOIN mentor_student_mapping m ON s.id = m.student_id
+        WHERE m.mentor_id = ? AND s.designation = 'student'
         ORDER BY s.name
     ");
     $mappedStudents->execute([$currentMentorId]);
@@ -495,3 +496,4 @@ if ($currentMentorId > 0) {
     </script>
 </body>
 </html>
+

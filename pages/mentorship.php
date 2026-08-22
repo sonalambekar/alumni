@@ -13,13 +13,11 @@ $userImage = '';
 // Get user data if logged in
 if ($isLoggedIn) {
     try {
-        $stmt = $pdo->prepare("SELECT name, email_id as email, profile_picture FROM users WHERE id = ?");
-        $stmt->execute([$userId]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $user = getCurrentUser();
         
         if ($user) {
-            $userName = $user['name'];
-            $userEmail = $user['email'];
+            $userName = $user['name'] ?? $_SESSION['user_name'] ?? '';
+            $userEmail = $user['email_id'] ?? $user['email'] ?? $_SESSION['user_email'] ?? '';
             
             // Handle profile picture path
             if (!empty($user['profile_picture'])) {

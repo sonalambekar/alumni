@@ -492,11 +492,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
                     <div class="profile-section">
                         <div class="profile-picture-container" style="text-align: center; margin-bottom: 25px;">
                             <div class="profile-picture-wrapper" style="position: relative; display: inline-block;">
+                                <?php 
+                                    $userName = trim($user['name'] ?? '');
+                                    $displayName = !empty($userName) ? $userName : 'User';
+                                    $defaultAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($displayName) . '&size=200&background=5b1f1f&color=fff';
+                                    
+                                    $profilePicSrc = $defaultAvatar;
+                                    if (!empty($user['profile_picture'])) {
+                                        $profilePic = trim($user['profile_picture']);
+                                        if (filter_var($profilePic, FILTER_VALIDATE_URL)) {
+                                            $profilePicSrc = $profilePic;
+                                        } else {
+                                            if (strpos($profilePic, 'attachments/') !== 0) {
+                                                $profilePicSrc = '../attachments/profile_pictures/' . ltrim($profilePic, '/');
+                                            } else {
+                                                $profilePicSrc = '../' . ltrim($profilePic, '/');
+                                            }
+                                        }
+                                    }
+                                ?>
                                 <img 
-                                    src="<?php echo !empty($user['profile_picture']) ? '../' . htmlspecialchars($user['profile_picture']) : '../assets/images/default-avatar.png'; ?>" 
+                                    src="<?php echo htmlspecialchars($profilePicSrc); ?>" 
                                     alt="Profile Picture" 
                                     id="profilePicturePreview"
                                     style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"
+                                    onerror="this.onerror=null; this.src='<?php echo $defaultAvatar; ?>';"
                                 >
                                 <label for="profilePicture" style="position: absolute; bottom: 10px; right: 10px; background: #5b1f1f; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
                                     <i class="fas fa-camera"></i>
@@ -607,7 +627,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
                     <div class="no-groups">
                         <i class="fas fa-users" style="font-size: 2rem; color: #dee2e6; margin-bottom: 15px; display: block;"></i>
                         <p>You haven't joined any groups yet.</p>
-                        <a href="../groups.php" class="btn" style="margin-top: 15px; background: #5b1f1f; color: white; text-decoration: none; padding: 8px 20px; border-radius: 4px; display: inline-block;">
+                        <a href="special-groups.php" class="btn" style="margin-top: 15px; background: #5b1f1f; color: white; text-decoration: none; padding: 8px 20px; border-radius: 4px; display: inline-block;">
                             Browse Groups <i class="fas fa-search" style="margin-left: 5px;"></i>
                         </a>
                     </div>
@@ -739,3 +759,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     </script>
 </body>
 </html>
+

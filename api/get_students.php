@@ -16,28 +16,27 @@ $mentor_id = isset($_GET['mentor_id']) ? intval($_GET['mentor_id']) : 0;
 file_put_contents('debug_get_students.log', "[DEBUG] Request received. Mentor ID: $mentor_id\n", FILE_APPEND);
 
 try {
-    // Use the global $pdo connection from db_config.php
-    global $pdo;
+    // Use the global $pdo_gmu connection from db_config.php
+    global $pdo_gmu, $pdo;
     
-    if (!isset($pdo)) {
+    if (!isset($pdo_gmu)) {
         throw new Exception("Database connection failed");
     }
 
     // Base query to fetch all students with profile pictures
-    $sql = "SELECT s.student_id as id, s.name, s.usn, s.email, 
-                   u.profile_picture, u.PROFILE_PICTURE as user_profile_picture
-            FROM students s
-            LEFT JOIN users u ON s.student_id = u.USER_NAME OR s.email = u.EMAIL";
+    $sql = "SELECT SL_NO as id, NAME as name, USER_NAME as usn, '' as email, PHOTO as profile_picture
+            FROM gmu.users 
+            WHERE DESIGNATION = 'STUDENT'";
     
     // If mentor_id is provided, exclude already mapped students
     if ($mentor_id > 0) {
-        $sql .= " WHERE NOT EXISTS (
-                    SELECT 1 FROM mentor_student_mapping m 
-                    WHERE m.mentor_id = :mentor_id AND m.student_id = s.student_id
+        $sql .= " AND NOT EXISTS (
+                    SELECT 1 FROM alumni.mentor_student_mapping m 
+                    WHERE m.mentor_id = :mentor_id AND m.student_id = gmu.users.SL_NO
                   )";
     }
     
-    $sql .= " ORDER BY s.name";
+    $sql .= " ORDER BY NAME";
     
     $stmt = $pdo->prepare($sql);
     
@@ -93,3 +92,4 @@ try {
     ]);
 }
 ?>
+

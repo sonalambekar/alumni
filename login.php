@@ -19,10 +19,18 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
         if ($currentUser) {
             // Set role in session if not already set
             if (!isset($_SESSION['role'])) {
-                if (isset($currentUser['is_director']) && $currentUser['is_director'] == 1) {
-                    $_SESSION['role'] = 'admin';
-                } elseif (isset($currentUser['is_spoc']) && $currentUser['is_spoc'] == 1) {
-                    $_SESSION['role'] = 'spoc';
+                if (isset($_SESSION['is_alumni_table']) && $_SESSION['is_alumni_table']) {
+                    $_SESSION['role'] = 'alumni';
+                } else {
+                    if (isset($currentUser['is_director']) && $currentUser['is_director'] == 1) {
+                        $_SESSION['role'] = 'admin';
+                    } elseif (isset($currentUser['is_spoc']) && $currentUser['is_spoc'] == 1) {
+                        $_SESSION['role'] = 'spoc';
+                    } elseif (strtolower(trim($currentUser['designation'] ?? '')) === 'student') {
+                        $_SESSION['role'] = 'student';
+                    } else {
+                        $_SESSION['role'] = 'alumni'; // Fallback for old records
+                    }
                 }
             }
 
@@ -40,7 +48,11 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
             else if (isset($currentUser['is_spoc']) && $currentUser['is_spoc'] == 1) {
                 header("Location: /alumni/spoc_dashboard.php");
             }
-            // Redirect regular users to the home page
+            // Redirect students to student dashboard
+            else if (isset($_SESSION['role']) && $_SESSION['role'] === 'student') {
+                header("Location: /alumni/pages/student_dashboard.php");
+            }
+            // Redirect alumni to the home page
             else {
                 header("Location: /alumni/index.php");
             }
@@ -65,14 +77,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please enter both USN and password.';
     } else {
         try {
-            // Check if user exists regardless of status
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE usn = ?");
+            $is_alumni = false;
+
+            // Check students table first (gmu database)
+            $stmt = $pdo_gmu->prepare("SELECT *, USER_NAME as usn, PASSWORD as password, NAME as name, COLLEGE as institute, DESIGNATION as designation, '' as email_id, SL_NO as id FROM users WHERE USER_NAME = ?");
             $stmt->execute([$usn]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$user) {
+                // Check users table (alumni database) for alumni/staff
+                $stmt = $pdo->prepare("SELECT * FROM users WHERE usn = ?");
+                $stmt->execute([$usn]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($user) {
+                    $is_alumni = true;
+                }
+            }
+            if (!$user) {
                 $error = "USN not found. Please check your USN.";
-            } elseif ($user['is_active'] == 0) {
+            } elseif (isset($user['is_active']) && $user['is_active'] == 0) {
                 $error = "Your account is pending approval from your Branch SPOC.";
             } else {
                 if (password_verify($password, $user['password'])) {
@@ -80,22 +104,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['user_name'] = $user['name'];
                     $_SESSION['user_email'] = $user['email_id'];
+                    $_SESSION['is_alumni_table'] = $is_alumni;
 
                     // Check if user is a director
-                    if ($user['is_director'] == 1) {
+                    if (isset($user['is_director']) && $user['is_director'] == 1) {
                         $_SESSION['role'] = 'admin';
+                        // Add specific debug log before redirect
+                        file_put_contents('scratch/failed_login.log', date('Y-m-d H:i:s') . " - Director login successful, redirecting to admin_dashboard.php\n", FILE_APPEND);
                         header("Location: /alumni/admin/admin_dashboard.php");
                         exit();
                     } elseif (isset($user['is_spoc']) && $user['is_spoc'] == 1) {
                         $_SESSION['role'] = 'spoc';
-                        header("Location: /alumni/spoc_dashboard.php");
+                        file_put_contents('scratch/failed_login.log', date('Y-m-d H:i:s') . " - SPOC login successful, redirecting to spoc_dashboard.php\n", FILE_APPEND);
+                        header("Location: /alumni/spoc/spoc_dashboard.php");
+                        exit();
+                    } elseif ($is_alumni) {
+                        $_SESSION['role'] = 'alumni';
+                        header("Location: /alumni/index.php");
+                        exit();
+                    } elseif (!$is_alumni) {
+                        $_SESSION['role'] = 'student';
+                        header("Location: /alumni/pages/student_dashboard.php");
                         exit();
                     } else {
+                        $_SESSION['role'] = 'alumni'; // Fallback
                         header("Location: /alumni/index.php");
                         exit();
                     }
                 } else {
                     $error = 'Incorrect password.';
+                    $connInfo = $pdo->getAttribute(PDO::ATTR_CONNECTION_STATUS);
+                    file_put_contents('scratch/failed_login.log', "USN: $usn\nAttempted PW: '$password'\nDB Hash: " . $user['password'] . "\nTime: " . date('Y-m-d H:i:s') . "\nConn: " . $connInfo . "\n\n", FILE_APPEND);
                 }
             }
         } catch (PDOException $e) {
@@ -660,3 +699,6 @@ $isLoggedIn = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0 && isset($
 </body>
 
 </html>
+
+
+

@@ -57,6 +57,12 @@ try {
 } catch(PDOException $e) {
     $error = "Error loading notices: " . $e->getMessage();
 }
+
+function parse_basic_markdown($text) {
+    // Parse **bold** text
+    $text = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $text);
+    return $text;
+}
 ?>
 
 <!DOCTYPE html>
@@ -100,45 +106,55 @@ try {
         }
 
         .noticeboard-container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
         .noticeboard-header {
+            background: linear-gradient(135deg, var(--primary-color), #8b2b2b);
+            padding: 40px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding: 20px 0;
-            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(91,31,31,0.2);
         }
 
         .noticeboard-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--text-color);
+            font-size: 28px;
+            font-weight: 700;
             margin: 0;
+            color: white;
+        }
+        
+        .noticeboard-subtitle {
+            margin: 10px 0 0;
+            opacity: 0.9;
+            font-size: 15px;
         }
 
         .create-notice-btn {
-            background: var(--primary-color);
-            color: white;
+            background: white;
+            color: var(--primary-color);
             border: none;
-            padding: 10px 20px;
-            border-radius: var(--border-radius);
+            padding: 12px 24px;
+            border-radius: 30px;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
             transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
         .create-notice-btn:hover {
-            background: #4a1a1a;
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
         }
 
         .notices-grid {
@@ -150,16 +166,23 @@ try {
 
         .notice-card {
             background: var(--white);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
             overflow: hidden;
             transition: all 0.3s ease;
             border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
+        
+        .notice-card[data-priority="high"] { border-top: 4px solid #dc2626; }
+        .notice-card[data-priority="medium"] { border-top: 4px solid #d97706; }
+        .notice-card[data-priority="low"] { border-top: 4px solid #0369a1; }
 
         .notice-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
         }
 
         .notice-header {
@@ -171,10 +194,11 @@ try {
         }
 
         .notice-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
             margin: 0;
             color: var(--text-color);
+            line-height: 1.4;
         }
 
         .notice-date {
@@ -211,27 +235,30 @@ try {
         .notice-actions {
             display: flex;
             gap: 10px;
-            padding: 0 20px 20px;
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
         }
 
         .action-btn {
-            background: none;
-            border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: var(--text-light);
+            background: #f8f9fa;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-color);
             cursor: pointer;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 5px;
-            transition: all 0.2s ease;
+            gap: 8px;
+            transition: all 0.3s ease;
         }
 
         .action-btn:hover {
-            background: var(--bg-light);
-            color: var(--primary-color);
-            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+            transform: translateX(4px);
         }
 
         .notice-priority {
@@ -307,7 +334,10 @@ try {
     <div class="main-content" id="mainContent">
         <div class="noticeboard-container">
             <div class="noticeboard-header">
-                <h1 class="noticeboard-title">Notice Board</h1>
+                <div>
+                    <h1 class="noticeboard-title">Notice Board</h1>
+                    <p class="noticeboard-subtitle">Stay updated with the latest announcements from GM University</p>
+                </div>
                 <?php if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                     <a href="/alumni/admin/manage_noticeboard.php" class="create-notice-btn">
                         <i class="fas fa-plus"></i>
@@ -324,7 +354,7 @@ try {
                     </div>
                 <?php elseif (isset($notices) && !empty($notices)): ?>
                     <?php foreach ($notices as $notice): ?>
-                        <div class="notice-card">
+                        <div class="notice-card" data-priority="<?php echo htmlspecialchars($notice['priority']); ?>">
                             <div class="notice-header">
                                 <h3 class="notice-title"><?php echo htmlspecialchars($notice['title']); ?></h3>
                                 <span class="notice-date">
@@ -344,13 +374,19 @@ try {
                                     </span>
                                 </div>
                                 <p class="notice-content">
-                                    <?php echo htmlspecialchars(substr(strip_tags($notice['content']), 0, 150)); ?>
-                                    <?php if (strlen(strip_tags($notice['content'])) > 150): ?>...<?php endif; ?>
+                                    <?php 
+                                        $content = strip_tags($notice['content']);
+                                        // Remove markdown for clean preview
+                                        $clean_content = str_replace('**', '', $content);
+                                        $snippet = mb_substr($clean_content, 0, 150);
+                                        if (mb_strlen($clean_content) > 150) $snippet .= '...';
+                                        echo htmlspecialchars($snippet);
+                                    ?>
                                 </p>
                             </div>
                             <div class="notice-actions">
                                 <button class="action-btn" onclick="viewNotice(<?php echo $notice['id']; ?>)">
-                                    <i class="far fa-eye"></i> View Details
+                                    View Details <i class="fas fa-arrow-right" style="font-size: 10px;"></i>
                                 </button>
                             </div>
                         </div>
@@ -404,7 +440,7 @@ try {
                                 ${notice.priority.toUpperCase()}
                             </span>
                         </div>
-                        <div style="font-size: 16px; line-height: 1.6; color: #333; white-space: pre-wrap;">${notice.content}</div>
+                        <div style="font-size: 16px; line-height: 1.6; color: #333; white-space: pre-wrap;">${notice.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div>
                     </div>
                 `;
 
