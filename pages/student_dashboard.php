@@ -59,7 +59,39 @@ try {
     $stmt->execute([$student_id]);
     $my_meetings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
+} catch (PDOException $e) {
     error_log("DB Error: " . $e->getMessage());
+}
+
+// Find upcoming meetings for the reminder banner and live alerts
+date_default_timezone_set('Asia/Kolkata');
+$now = new DateTime();
+$upcoming_meeting_banner = null;
+$upcoming_meetings_js = [];
+
+foreach ($my_meetings as $meeting) {
+    if ($meeting['status'] === 'accepted' || $meeting['status'] === 'rescheduled') {
+        $meeting_time_str = $meeting['requested_date'] . ' ' . $meeting['requested_time'];
+        try {
+            $meeting_dt = new DateTime($meeting_time_str);
+            $diff_seconds = $meeting_dt->getTimestamp() - $now->getTimestamp();
+            
+            // For the banner: meeting is between 1 hour (3600s) from now and 30 minutes ago (-1800s)
+            if ($diff_seconds <= 3600 && $diff_seconds >= -1800 && !$upcoming_meeting_banner) {
+                $upcoming_meeting_banner = $meeting;
+                $upcoming_meeting_banner['minutes_left'] = floor($diff_seconds / 60);
+            }
+            
+            // For live JS alerts: all future meetings
+            if ($diff_seconds > 0) {
+                $upcoming_meetings_js[] = [
+                    'mentor' => $meeting['mentor_name'],
+                    'seconds_until' => $diff_seconds,
+                    'link' => $meeting['meeting_link']
+                ];
+            }
+        } catch (Exception $e) {}
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -187,6 +219,41 @@ try {
             <?php endif; ?>
             <?php if ($error_msg): ?>
                 <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px; margin-bottom: 20px;"><?= htmlspecialchars($error_msg) ?></div>
+            <?php endif; ?>
+
+            <?php if ($upcoming_meeting_banner): ?>
+                <div style="background: #e6f7ff; border-left: 4px solid #1890ff; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <i class="fas fa-bell" style="font-size: 24px; color: #1890ff; animation: swing 2s infinite ease-in-out;"></i>
+                        <div>
+                            <h4 style="margin: 0 0 5px 0; color: #0050b3; font-size: 16px;">Reminder: Upcoming Meeting!</h4>
+                            <p style="margin: 0; color: #333; font-size: 14px;">
+                                Your meeting with <strong><?= htmlspecialchars($upcoming_meeting_banner['mentor_name']) ?></strong> 
+                                <?php if ($upcoming_meeting_banner['minutes_left'] > 0): ?>
+                                    starts in <strong><?= $upcoming_meeting_banner['minutes_left'] ?> minutes</strong>.
+                                <?php else: ?>
+                                    has started <strong><?= abs($upcoming_meeting_banner['minutes_left']) ?> minutes ago</strong>.
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                    </div>
+                    <?php if (!empty($upcoming_meeting_banner['meeting_link'])): ?>
+                        <a href="<?= htmlspecialchars($upcoming_meeting_banner['meeting_link']) ?>" target="_blank" class="btn btn-primary" style="background: #1890ff; border: none; padding: 10px 20px; width: auto;">
+                            <i class="fas fa-video"></i> Join Now
+                        </a>
+                    <?php endif; ?>
+                </div>
+                <style>
+                    @keyframes swing {
+                        0% { transform: rotate(0deg); }
+                        10% { transform: rotate(15deg); }
+                        20% { transform: rotate(-10deg); }
+                        30% { transform: rotate(5deg); }
+                        40% { transform: rotate(-5deg); }
+                        50% { transform: rotate(0deg); }
+                        100% { transform: rotate(0deg); }
+                    }
+                </style>
             <?php endif; ?>
 
             <div class="header-actions">
@@ -442,6 +509,21 @@ try {
                 }
             });
         });
+
+        // Live Reminder Alert Logic
+        const upcomingMeetings = <?= json_encode($upcoming_meetings_js) ?>;
+        if (upcomingMeetings && upcomingMeetings.length > 0) {
+            upcomingMeetings.forEach(meeting => {
+                // If the meeting is more than 60 mins away, schedule an alert for exactly 60 mins before
+                if (meeting.seconds_until > 3600) {
+                    const msUntilReminder = (meeting.seconds_until - 3600) * 1000;
+                    setTimeout(() => {
+                        alert(`Reminder: Your meeting with ${meeting.mentor} will start in exactly 1 hour!`);
+                        location.reload(); // Reload to show the banner
+                    }, msUntilReminder);
+                } 
+            });
+        }
     </script>
 </body>
 </html>

@@ -108,6 +108,11 @@ try {
         .status-select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 20px; font-weight: 500; font-size: 14px; outline: none; background: white; cursor: pointer; }
         .status-select:focus { border-color: #5b1f1f; }
         
+        .filter-controls { display: flex; gap: 10px; flex-wrap: wrap; background: #f8f9fa; padding: 8px; border-radius: 30px; border: 1px solid #eee; margin-bottom: 20px; }
+        .filter-btn { background: transparent; color: #555; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+        .filter-btn:hover { color: #222; }
+        .filter-btn.active { background: #5b1f1f; color: white; box-shadow: 0 2px 8px rgba(91,31,31,0.2); }
+        
         .requests-list { display: flex; flex-direction: column; gap: 20px; }
         .request-card { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 0; overflow: hidden; border: 1px solid #f0f0f0; transition: transform 0.2s, box-shadow 0.2s; }
         .request-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
@@ -178,12 +183,19 @@ try {
                 </div>
             </div>
 
+            <div class="filter-controls">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="pending">Pending</button>
+                <button class="filter-btn" data-filter="accepted">Accepted/Rescheduled</button>
+                <button class="filter-btn" data-filter="rejected">Rejected</button>
+            </div>
+
             <div class="requests-list">
                 <?php if (empty($incoming_requests)): ?>
                     <p style="color: #666; text-align: center; padding: 40px; background: white; border-radius: 8px;">No meeting requests yet.</p>
                 <?php else: ?>
                     <?php foreach ($incoming_requests as $req): ?>
-                        <div class="request-card status-<?= $req['status'] ?>">
+                        <div class="request-card status-<?= $req['status'] ?>" data-status="<?= htmlspecialchars($req['status']) ?>">
                             <div class="req-header">
                                 <div>
                                     <h3 class="req-name"><?= htmlspecialchars($req['student_name'] ?? 'Unknown Student') ?></h3>
@@ -333,6 +345,52 @@ try {
                 closeRescheduleModal();
             }
         }
+
+        // Meeting Request Filter Logic
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active button state
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const filter = this.getAttribute('data-filter');
+                    const items = document.querySelectorAll('.request-card');
+                    let visibleCount = 0;
+                    
+                    items.forEach(item => {
+                        const status = item.getAttribute('data-status');
+                        let shouldShow = false;
+                        
+                        if (filter === 'all') {
+                            shouldShow = true;
+                        } else if (filter === 'accepted' && (status === 'accepted' || status === 'rescheduled')) {
+                            shouldShow = true;
+                        } else if (filter === status) {
+                            shouldShow = true;
+                        }
+                        
+                        if (shouldShow) {
+                            item.style.display = 'block';
+                            visibleCount++;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                    
+                    // Handle empty state text
+                    let emptyMsg = document.getElementById('no-requests-msg');
+                    if (!emptyMsg && visibleCount === 0) {
+                        const list = document.querySelector('.requests-list');
+                        list.insertAdjacentHTML('beforeend', '<p id="no-requests-msg" style="color: #666; text-align: center; padding: 40px; background: white; border-radius: 8px;">No requests found for this filter.</p>');
+                    } else if (emptyMsg && visibleCount > 0) {
+                        emptyMsg.remove();
+                    } else if (emptyMsg && visibleCount === 0) {
+                        emptyMsg.style.display = 'block';
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
