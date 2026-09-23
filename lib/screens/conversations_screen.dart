@@ -168,6 +168,12 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                     },
                   ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/discover'),
+        backgroundColor: AppConfig.primaryColor,
+        tooltip: 'Find Alumni',
+        child: const Icon(Icons.person_search, color: Colors.white),
+      ),
     );
   }
 

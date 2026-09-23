@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_drawer.dart';
 import 'package:go_router/go_router.dart';
 import '../models/job_model.dart';
 import '../services/api_service.dart';
@@ -64,8 +65,15 @@ class _JobsScreenState extends State<JobsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConfig.bgLight,
+      drawer: const AppDrawer(),
+backgroundColor: AppConfig.bgLight,
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('Opportunities'),
         centerTitle: true,
         elevation: 0,

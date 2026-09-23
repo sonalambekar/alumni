@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_drawer.dart';
 import '../config/app_config.dart';
 
 class ProudAlumniScreen extends StatelessWidget {
@@ -76,8 +77,15 @@ class ProudAlumniScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: AppConfig.bgLight,
+      drawer: const AppDrawer(),
+backgroundColor: AppConfig.bgLight,
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('Hall of Fame'),
         centerTitle: true,
         elevation: 0,

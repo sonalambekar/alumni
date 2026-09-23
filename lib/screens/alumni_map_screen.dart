@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_drawer.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -165,7 +166,14 @@ class _AlumniMapScreenState extends State<AlumniMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      drawer: const AppDrawer(),
+appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('Alumni Map'),
         backgroundColor: AppConfig.primaryColor,
         actions: [

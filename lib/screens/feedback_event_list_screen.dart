@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_drawer.dart';
 import 'package:go_router/go_router.dart';
 import '../config/app_config.dart';
 import '../services/api_service.dart';
@@ -80,8 +81,15 @@ class _FeedbackEventListScreenState extends State<FeedbackEventListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEFE8DE),
+      drawer: const AppDrawer(),
+backgroundColor: const Color(0xFFEFE8DE),
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         backgroundColor: AppConfig.primaryColor,
         elevation: 0,
         title: const Text(

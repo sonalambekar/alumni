@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_drawer.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -57,7 +58,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     print('DEBUG ProfileScreen: Building with user: ${user?.name}, phone: ${user?.phone}, dept: ${user?.department}, batch: ${user?.batch}, pic: ${user?.profilePicture}');
 
     return Scaffold(
-      backgroundColor: AppConfig.bgLight,
+      drawer: const AppDrawer(),
+backgroundColor: AppConfig.bgLight,
       body: CustomScrollView(
         slivers: [
           _buildSliverAppBar(context, user),
@@ -103,6 +105,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildSliverAppBar(BuildContext context, user) {
     return SliverAppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
       expandedHeight: 320,
       pinned: true,
       elevation: 0,

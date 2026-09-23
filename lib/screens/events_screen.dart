@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_drawer.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -103,8 +104,15 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      drawer: const AppDrawer(),
+backgroundColor: Colors.grey[50],
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         elevation: 0,
         backgroundColor: AppConfig.primaryColor,
         title: const Text('Events Calendar', style: TextStyle(fontWeight: FontWeight.bold)),

@@ -187,7 +187,7 @@ class AppDrawer extends StatelessWidget {
         ),
         onTap: () {
           Navigator.pop(context);
-          context.push(route);
+          context.go(route);
         },
       ),
     );

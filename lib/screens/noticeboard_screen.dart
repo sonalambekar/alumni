@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_drawer.dart';
 import 'package:intl/intl.dart';
 import '../config/app_config.dart';
 import '../models/notice_model.dart';
@@ -67,8 +68,15 @@ class _NoticeboardScreenState extends State<NoticeboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConfig.bgLight,
+      drawer: const AppDrawer(),
+backgroundColor: AppConfig.bgLight,
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('Noticeboard'),
         elevation: 0,
         centerTitle: true,

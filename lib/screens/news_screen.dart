@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_drawer.dart';
 import 'package:intl/intl.dart';
 import '../models/news_model.dart';
 import '../services/api_service.dart';
@@ -59,14 +60,28 @@ class _NewsScreenState extends State<NewsScreen> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('News Corner')),
+      drawer: const AppDrawer(),
+appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),title: const Text('News Corner')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('News Corner')),
+      drawer: const AppDrawer(),
+        appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),title: const Text('News Corner')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -93,13 +108,27 @@ class _NewsScreenState extends State<NewsScreen> {
 
     if (newsList.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('News Corner')),
+      drawer: const AppDrawer(),
+        appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),title: const Text('News Corner')),
         body: const Center(child: Text('No news available')),
       );
     }
 
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('News Corner'),
       ),
       body: ListView.builder(

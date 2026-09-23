@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_drawer.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:dio/dio.dart';
@@ -140,7 +141,14 @@ class _ScanEventQrScreenState extends State<ScanEventQrScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      drawer: const AppDrawer(),
+appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('Scan Event QR'),
         backgroundColor: AppConfig.primaryColor,
         foregroundColor: Colors.white,

@@ -15,7 +15,7 @@ try {
               WHERE is_active = 1";
     
     if (!empty($search)) {
-        $query .= " AND (name LIKE :search OR usn LIKE :search2 OR email_id LIKE :search3)";
+        $query .= " AND (name LIKE :search OR usn LIKE :search2 OR email_id LIKE :search3 OR branch LIKE :search4)";
     }
     
     $query .= " ORDER BY name ASC";
@@ -27,6 +27,7 @@ try {
         $stmt->bindParam(":search", $searchParam);
         $stmt->bindParam(":search2", $searchParam);
         $stmt->bindParam(":search3", $searchParam);
+        $stmt->bindParam(":search4", $searchParam);
     }
     
     $stmt->execute();

@@ -1,0 +1,315 @@
+<?php
+session_start();
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, GET, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+require_once "../config/database.php";
+
+class PostsAPI {
+    private $db;
+
+    public function __construct() {
+        $database = new Database();
+        $this->db = $database->getConnection();
+    }
+
+    public function getPosts($user_id = null, $limit = 20, $offset = 0) {
+        try {
+            // Get current user ID from parameter or session
+            $current_user_id = $user_id ?? $_SESSION['user_id'] ?? null;
+            
+            // Show all approved posts for now (can be modified later for following-based feed)
+            $query = "SELECT p.*, u.name, u.profile_picture,
+                             (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
+                             (SELECT COUNT(*) FROM shares WHERE post_id = p.id) as share_count";
+            
+            // Add is_liked only if user is logged in
+            if ($current_user_id) {
+                $query .= ", (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = :current_user_id) as is_liked";
+            } else {
+                $query .= ", 0 as is_liked";
+            }
+            
+            $query .= " FROM posts p
+                       JOIN users u ON p.user_id = u.id
+                       WHERE p.status = 'approved'
+                       ORDER BY p.created_at DESC
+                       LIMIT :limit OFFSET :offset";
+
+            $stmt = $this->db->prepare($query);
+            
+            if ($current_user_id) {
+                $stmt->bindParam(":current_user_id", $current_user_id);
+            }
+            $stmt->bindParam(":limit", $limit, PDO::PARAM_INT);
+            $stmt->bindParam(":offset", $offset, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $posts = [];
+            while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $posts[] = [
+                    'id' => $row['id'],
+                    'user_id' => $row['user_id'],
+                    'content' => $row['content'],
+                    'media_type' => $row['media_type'],
+                    'media_url' => $row['media_url'],
+                    'status' => $row['status'],
+                    'created_at' => $row['created_at'],
+                    'user' => [
+                        'name' => $row['name'],
+                        'profile_picture' => $row['profile_picture'] ?: 'default.jpg'
+                    ],
+                    'like_count' => (int)$row['like_count'],
+                    'share_count' => (int)$row['share_count'],
+                    'is_liked' => (bool)$row['is_liked']
+                ];
+            }
+
+            return [
+                'success' => true,
+                'posts' => $posts
+            ];
+        } catch(PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function createPost($content, $media_type = 'none', $media_url = null, $user_id = null) {
+        try {
+            // Get user_id from parameter or session
+            $current_user_id = $user_id ?? $_SESSION['user_id'] ?? null;
+            
+            if (!$current_user_id) {
+                return [
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ];
+            }
+            
+            $query = "INSERT INTO posts (user_id, content, media_type, media_url, status) VALUES (:user_id, :content, :media_type, :media_url, 'pending')";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(":user_id", $current_user_id);
+            $stmt->bindParam(":content", $content);
+            $stmt->bindParam(":media_type", $media_type);
+            $stmt->bindParam(":media_url", $media_url);
+            $stmt->execute();
+
+            return [
+                'success' => true,
+                'message' => 'Post created successfully',
+                'post_id' => $this->db->lastInsertId()
+            ];
+        } catch(PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function likePost($post_id) {
+        try {
+            // Check if already liked
+            $check_query = "SELECT id FROM likes WHERE user_id = :user_id AND post_id = :post_id";
+            $check_stmt = $this->db->prepare($check_query);
+            $check_stmt->bindParam(":user_id", $_SESSION['user_id']);
+            $check_stmt->bindParam(":post_id", $post_id);
+            $check_stmt->execute();
+
+            if($check_stmt->rowCount() > 0) {
+                // Unlike
+                $query = "DELETE FROM likes WHERE user_id = :user_id AND post_id = :post_id";
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(":user_id", $_SESSION['user_id']);
+                $stmt->bindParam(":post_id", $post_id);
+                $stmt->execute();
+
+                return [
+                    'success' => true,
+                    'message' => 'Post unliked',
+                    'action' => 'unliked'
+                ];
+            } else {
+                // Like
+                $query = "INSERT INTO likes (user_id, post_id) VALUES (:user_id, :post_id)";
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(":user_id", $_SESSION['user_id']);
+                $stmt->bindParam(":post_id", $post_id);
+                $stmt->execute();
+
+                return [
+                    'success' => true,
+                    'message' => 'Post liked',
+                    'action' => 'liked'
+                ];
+            }
+        } catch(PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function sharePost($post_id) {
+        try {
+            $query = "INSERT INTO shares (user_id, post_id) VALUES (:user_id, :post_id)";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(":user_id", $_SESSION['user_id']);
+            $stmt->bindParam(":post_id", $post_id);
+            $stmt->execute();
+
+            return [
+                'success' => true,
+                'message' => 'Post shared successfully'
+            ];
+        } catch(PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function getPendingPosts() {
+        try {
+            $query = "SELECT p.*, u.name, u.profile_picture
+                      FROM posts p
+                      JOIN users u ON p.user_id = u.id
+                      WHERE p.status = 'pending'
+                      ORDER BY p.created_at ASC";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+
+            $posts = [];
+            while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $posts[] = [
+                    'id' => $row['id'],
+                    'user_id' => $row['user_id'],
+                    'content' => $row['content'],
+                    'media_type' => $row['media_type'],
+                    'media_url' => $row['media_url'],
+                    'created_at' => $row['created_at'],
+                    'user' => [
+                        'name' => $row['name'],
+                        'profile_picture' => $row['profile_picture'] ?: 'default.jpg'
+                    ]
+                ];
+            }
+
+            return [
+                'success' => true,
+                'posts' => $posts
+            ];
+        } catch(PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function approvePost($post_id) {
+        try {
+            $query = "UPDATE posts SET status = 'approved' WHERE id = :post_id";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(":post_id", $post_id);
+            $stmt->execute();
+
+            return [
+                'success' => true,
+                'message' => 'Post approved successfully'
+            ];
+        } catch(PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function rejectPost($post_id) {
+        try {
+            $query = "UPDATE posts SET status = 'rejected' WHERE id = :post_id";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(":post_id", $post_id);
+            $stmt->execute();
+
+            return [
+                'success' => true,
+                'message' => 'Post rejected'
+            ];
+        } catch(PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
+    }
+}
+
+$postsAPI = new PostsAPI();
+
+// Handle different HTTP methods
+$method = $_SERVER['REQUEST_METHOD'];
+$input = json_decode(file_get_contents('php://input'), true);
+
+switch($method) {
+    case 'GET':
+        if(isset($_GET['action'])) {
+            switch($_GET['action']) {
+                case 'get_posts':
+                    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+                    $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+                    $user_id = isset($_GET['user_id']) ? (int)$_GET['user_id'] : ($_SESSION['user_id'] ?? null);
+                    $result = $postsAPI->getPosts($user_id, $limit, $offset);
+                    break;
+                case 'get_pending_posts':
+                    $result = $postsAPI->getPendingPosts();
+                    break;
+                default:
+                    $result = ['success' => false, 'message' => 'Invalid action'];
+            }
+        } else {
+            $result = ['success' => false, 'message' => 'No action specified'];
+        }
+        break;
+
+    case 'POST':
+        if(isset($input['action'])) {
+            switch($input['action']) {
+                case 'create_post':
+                    $result = $postsAPI->createPost($input['content'], $input['media_type'] ?? 'none', $input['media_url'] ?? null, $input['user_id'] ?? null);
+                    break;
+                case 'like_post':
+                    $result = $postsAPI->likePost($input['post_id']);
+                    break;
+                case 'share_post':
+                    $result = $postsAPI->sharePost($input['post_id']);
+                    break;
+                case 'approve_post':
+                    $result = $postsAPI->approvePost($input['post_id']);
+                    break;
+                case 'reject_post':
+                    $result = $postsAPI->rejectPost($input['post_id']);
+                    break;
+                default:
+                    $result = ['success' => false, 'message' => 'Invalid action'];
+            }
+        } else {
+            $result = ['success' => false, 'message' => 'No action specified'];
+        }
+        break;
+
+    default:
+        $result = ['success' => false, 'message' => 'Method not allowed'];
+}
+
+echo json_encode($result);
+?>

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_drawer.dart';
 import '../models/announcement_model.dart';
 import '../services/api_service.dart';
 
@@ -49,7 +50,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      drawer: const AppDrawer(),
+appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('Announcements'),
       ),
       body: isLoading

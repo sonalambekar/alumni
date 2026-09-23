@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_config.dart';
 import '../models/core_team_model.dart';
+import '../widgets/app_drawer.dart';
 
 class CoreTeamScreen extends StatelessWidget {
   const CoreTeamScreen({super.key});
@@ -31,7 +32,14 @@ class CoreTeamScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppConfig.bgLight,
+      drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('Core Team'),
         elevation: 0,
         centerTitle: true,
