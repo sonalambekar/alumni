@@ -14,6 +14,7 @@ import '../../providers/auth_provider.dart';
 import 'video_player_screen.dart';
 import 'audio_player_screen.dart';
 import '../../services/api_service.dart';
+import '../../widgets/app_drawer.dart';
 
 class DirectorFeedbackScreen extends StatefulWidget {
   const DirectorFeedbackScreen({super.key});
@@ -97,8 +98,22 @@ class _DirectorFeedbackScreenState extends State<DirectorFeedbackScreen> {
     }
   }
 
+  String _getMediaUrl(String path) {
+    String url = path;
+    if (!path.startsWith('http')) {
+      String cleanPath = path.replaceAll('\\', '/');
+      if (cleanPath.startsWith('/')) {
+        cleanPath = cleanPath.substring(1);
+      }
+      url = '${AppConfig.apiUrl}/$cleanPath';
+    }
+    
+    // Force HTTP instead of HTTPS to bypass native ExoPlayer SSL certificate validation issues
+    return url.replaceFirst('https://', 'http://');
+  }
+
   Future<void> _launchVideo(String videoPath) async {
-    final url = '${AppConfig.apiUrl}/$videoPath';
+    final url = _getMediaUrl(videoPath);
     if (mounted) {
       Navigator.push(
         context,
@@ -110,7 +125,7 @@ class _DirectorFeedbackScreenState extends State<DirectorFeedbackScreen> {
   }
   
   Future<void> _launchAudio(String audioPath) async {
-    final url = '${AppConfig.apiUrl}/$audioPath';
+    final url = _getMediaUrl(audioPath);
     if (mounted) {
       Navigator.push(
         context,
@@ -130,7 +145,7 @@ class _DirectorFeedbackScreenState extends State<DirectorFeedbackScreen> {
       String savePath = '${dir.path}/$fileName';
 
       Dio dio = Dio();
-      final url = '${AppConfig.apiUrl}/$path';
+      final url = _getMediaUrl(path);
       await dio.download(url, savePath);
 
       if (mounted) {
@@ -469,7 +484,14 @@ class _DirectorFeedbackScreenState extends State<DirectorFeedbackScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConfig.bgLight,
+      drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('Alumni Feedback'),
         centerTitle: true,
         backgroundColor: AppConfig.primaryColor,

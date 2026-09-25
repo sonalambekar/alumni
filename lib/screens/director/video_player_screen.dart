@@ -113,9 +113,22 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       ),
       body: Center(
         child: _isError 
-            ? const Text(
-                'Failed to load video',
-                style: TextStyle(color: Colors.white),
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.white, size: 48),
+                  const SizedBox(height: 16),
+                  const Text('Failed to load video', style: TextStyle(color: Colors.white, fontSize: 18)),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Text(
+                      widget.videoUrl,
+                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
               )
             : _controller.value.isInitialized
                 ? AspectRatio(

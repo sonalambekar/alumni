@@ -19,6 +19,8 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
   bool _isDownloading = false;
+  bool _isError = false;
+  String _errorMessage = '';
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
@@ -53,7 +55,16 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
       }
     });
 
-    await _audioPlayer.setSourceUrl(widget.audioUrl);
+    try {
+      await _audioPlayer.setSourceUrl(widget.audioUrl);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isError = true;
+          _errorMessage = e.toString();
+        });
+      }
+    }
   }
 
   @override
@@ -139,46 +150,61 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.audiotrack, size: 100, color: AppConfig.primaryColor),
-              const SizedBox(height: 40),
-              Slider(
-                value: _position.inSeconds.toDouble(),
-                min: 0,
-                max: _duration.inSeconds.toDouble() > 0 ? _duration.inSeconds.toDouble() : 1,
-                onChanged: (value) {
-                  _audioPlayer.seek(Duration(seconds: value.toInt()));
-                },
-                activeColor: AppConfig.primaryColor,
-                inactiveColor: Colors.grey,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: _isError 
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(_formatDuration(_position), style: const TextStyle(color: Colors.white)),
-                    Text(_formatDuration(_duration), style: const TextStyle(color: Colors.white)),
+                    const Icon(Icons.error_outline, color: Colors.white, size: 48),
+                    const SizedBox(height: 16),
+                    const Text('Failed to load audio', style: TextStyle(color: Colors.white, fontSize: 18)),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.audioUrl,
+                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.audiotrack, size: 100, color: AppConfig.primaryColor),
+                    const SizedBox(height: 40),
+                    Slider(
+                      value: _position.inSeconds.toDouble(),
+                      min: 0,
+                      max: _duration.inSeconds.toDouble() > 0 ? _duration.inSeconds.toDouble() : 1,
+                      onChanged: (value) {
+                        _audioPlayer.seek(Duration(seconds: value.toInt()));
+                      },
+                      activeColor: AppConfig.primaryColor,
+                      inactiveColor: Colors.grey,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(_formatDuration(_position), style: const TextStyle(color: Colors.white)),
+                          Text(_formatDuration(_duration), style: const TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    IconButton(
+                      iconSize: 80,
+                      color: AppConfig.primaryColor,
+                      icon: Icon(_isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled),
+                      onPressed: () {
+                        if (_isPlaying) {
+                          _audioPlayer.pause();
+                        } else {
+                          _audioPlayer.play(UrlSource(widget.audioUrl));
+                        }
+                      },
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 40),
-              IconButton(
-                iconSize: 80,
-                color: AppConfig.primaryColor,
-                icon: Icon(_isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled),
-                onPressed: () {
-                  if (_isPlaying) {
-                    _audioPlayer.pause();
-                  } else {
-                    _audioPlayer.play(UrlSource(widget.audioUrl));
-                  }
-                },
-              ),
-            ],
-          ),
         ),
       ),
     );

@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../config/app_config.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/event_model.dart';
+import '../../widgets/app_drawer.dart';
 
 class EventsManagementScreen extends StatefulWidget {
   const EventsManagementScreen({super.key});
@@ -70,7 +71,14 @@ class _EventsManagementScreenState extends State<EventsManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('Manage Events'),
         backgroundColor: AppConfig.primaryColor,
         foregroundColor: Colors.white,

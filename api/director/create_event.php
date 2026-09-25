@@ -68,9 +68,12 @@ try {
     $title = $data['title'] ?? '';
     $description = $data['description'] ?? '';
     $eventDate = $data['event_date'] ?? '';
-    $endDate = $data['end_date'] ?? $eventDate; // default to event_date if no end_date is provided
+    $endDate = $data['end_date'] ?? $eventDate;
     $location = $data['location'] ?? '';
     $priority = $data['priority'] ?? 'high';
+
+    // DEBUG: Write incoming data to a file so we can inspect it
+    file_put_contents(__DIR__ . '/debug_create_event.txt', "Raw Input:\n" . print_r($input, true) . "\nParsed Data:\n" . print_r($data, true) . "\nTitle: '$title', EventDate: '$eventDate'\n");
 
     if (empty($title) || empty($eventDate)) {
         http_response_code(400);
@@ -89,7 +92,7 @@ try {
         ':location' => $location,
         ':organizer_id' => $user['id']
     ]);
-    
+
     $eventId = $pdo->lastInsertId();
 
     // Sync to noticeboard
@@ -99,7 +102,7 @@ try {
         $noticeContent .= " at " . $location;
     }
     $noticeContent .= ".\n\nDetails: " . $description;
-    
+
     $noticeQuery = "INSERT INTO noticeboard (title, content, author_id, priority, is_active, publish_date, created_at) 
                     VALUES (:title, :content, :author_id, :priority, 1, NOW(), NOW())";
     $noticeStmt = $pdo->prepare($noticeQuery);
@@ -121,5 +124,3 @@ try {
     echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
 }
 ?>
-
-

@@ -12,6 +12,7 @@ import 'package:pdf/widgets.dart' as pw;
 import '../../config/app_config.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/event_model.dart';
+import '../../services/api_service.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final EventModel event;
@@ -40,38 +41,42 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiUrl}/director/get_event_roster.php?event_id=${widget.event.id}'),
-        headers: {
-          'Authorization': 'Bearer ${authProvider.token}',
-        },
+      final response = await ApiService.get(
+        '/director/get_event_roster.php?event_id=${widget.event.id}',
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         if (data['success']) {
-          setState(() {
-            _roster = data['data'];
-            _isLoadingRoster = false;
-          });
+          if (mounted) {
+            setState(() {
+              _roster = data['data'];
+              _isLoadingRoster = false;
+            });
+          }
         } else {
+          if (mounted) {
+            setState(() {
+              _rosterError = data['message'];
+              _isLoadingRoster = false;
+            });
+          }
+        }
+      } else {
+        if (mounted) {
           setState(() {
-            _rosterError = data['message'];
+            _rosterError = 'Failed to load roster. Status: ${response.statusCode}';
             _isLoadingRoster = false;
           });
         }
-      } else {
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          _rosterError = 'Failed to load roster. Status: ${response.statusCode}';
+          _rosterError = 'Error loading roster: $e';
           _isLoadingRoster = false;
         });
       }
-    } catch (e) {
-      setState(() {
-        _rosterError = 'Error loading roster: $e';
-        _isLoadingRoster = false;
-      });
     }
   }
 

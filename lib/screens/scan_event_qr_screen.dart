@@ -193,38 +193,40 @@ appBar: AppBar(
             ),
 
           if (_isSuccess)
-            Container(
-              color: Colors.white,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 100),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Registration Successful!',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
+            Positioned.fill(
+              child: Container(
+                color: Colors.white,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.green, size: 100),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Registration Successful!',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'You are now registered for this event.',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 32),
-                    ElevatedButton(
-                      onPressed: () => context.pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppConfig.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'You are now registered for this event.',
+                        style: TextStyle(fontSize: 16),
                       ),
-                      child: const Text('Return to Dashboard'),
-                    ),
-                  ],
+                      const SizedBox(height: 32),
+                      ElevatedButton(
+                        onPressed: () => context.go('/home'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppConfig.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        ),
+                        child: const Text('Return to Dashboard'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

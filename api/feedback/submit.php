@@ -33,30 +33,36 @@ try {
     }
 
     // Handle video upload if present
-    if (isset($_FILES['video']) && $_FILES['video']['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = '../uploads/feedback_videos/';
-        if (!file_exists($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
+    if (isset($_FILES['video'])) {
+        if ($_FILES['video']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/feedback_videos/';
+            if (!file_exists($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
 
-        $file_info = pathinfo($_FILES['video']['name']);
-        $ext = strtolower($file_info['extension']);
-        $allowed_exts = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4a', 'mp3', 'aac', 'wav'];
+            $file_info = pathinfo($_FILES['video']['name']);
+            $ext = strtolower($file_info['extension']);
+            $allowed_exts = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4a', 'mp3', 'aac', 'wav'];
 
-        if (!in_array($ext, $allowed_exts)) {
+            if (!in_array($ext, $allowed_exts)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid media format. Allowed: mp4, mov, avi, mkv, webm, m4a, mp3, aac, wav']);
+                exit;
+            }
+
+            $new_filename = 'feedback_' . $user_id . '_' . time() . '.' . $ext;
+            $destination = $upload_dir . $new_filename;
+
+            if (move_uploaded_file($_FILES['video']['tmp_name'], $destination)) {
+                $video_path = 'uploads/feedback_videos/' . $new_filename;
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Failed to move uploaded file']);
+                exit;
+            }
+        } elseif ($_FILES['video']['error'] !== UPLOAD_ERR_NO_FILE) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Invalid media format. Allowed: mp4, mov, avi, mkv, webm, m4a, mp3, aac, wav']);
-            exit;
-        }
-
-        $new_filename = 'feedback_' . $user_id . '_' . time() . '.' . $ext;
-        $destination = $upload_dir . $new_filename;
-
-        if (move_uploaded_file($_FILES['video']['tmp_name'], $destination)) {
-            $video_path = 'uploads/feedback_videos/' . $new_filename;
-        } else {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Failed to upload video']);
+            echo json_encode(['success' => false, 'message' => 'File upload error code: ' . $_FILES['video']['error'] . '. File may be too large.']);
             exit;
         }
     }

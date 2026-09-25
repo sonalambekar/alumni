@@ -11,13 +11,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../includes/db_config.php';
 
-$headers = getallheaders();
-$authHeader = $headers['Authorization'] ?? (isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '');
+$authHeader = '';
+if (function_exists('getallheaders')) {
+    $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+    if (!empty($headers['authorization'])) {
+        $authHeader = $headers['authorization'];
+    }
+}
+if (empty($authHeader) && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
+    $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+}
+if (empty($authHeader) && !empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+    $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+}
+if (empty($authHeader) && !empty($_SERVER['HTTP_X_AUTHORIZATION'])) {
+    $authHeader = $_SERVER['HTTP_X_AUTHORIZATION'];
+}
+
 $token = '';
 if (strpos($authHeader, 'Bearer ') === 0) {
     $token = substr($authHeader, 7);
 } else {
-    $token = $authHeader;
+    $token = trim($authHeader);
 }
 
 if (empty($token)) {
@@ -51,17 +66,28 @@ try {
 
     $roster = [];
     if ($event && !empty($event['registered_alumni_ids'])) {
-        $ids = json_decode($event['registered_alumni_ids'], true);
-        if (is_array($ids) && count($ids) > 0) {
-            $inQuery = implode(',', array_fill(0, count($ids), '?'));
-            $userStmt = $pdo->prepare("SELECT id, name, email_id, usn, branch, year_of_graduation as batch, phone_number as phone FROM users WHERE id IN ($inQuery)");
-            $userStmt->execute($ids);
-            
-            $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($users as &$u) {
-                $u['registered_at'] = $event['updated_at'];
+        $registrations = json_decode($event['registered_alumni_ids'], true);
+        if (is_array($registrations) && count($registrations) > 0) {
+            $ids = [];
+            foreach ($registrations as $reg) {
+                if (is_array($reg) && isset($reg['id'])) {
+                    $ids[] = $reg['id'];
+                } elseif (is_numeric($reg)) {
+                    $ids[] = $reg;
+                }
             }
-            $roster = $users;
+            
+            if (count($ids) > 0) {
+                $inQuery = implode(',', array_fill(0, count($ids), '?'));
+                $userStmt = $pdo->prepare("SELECT id, name, email_id, usn, branch, year_of_graduation as batch, phone_number as phone FROM users WHERE id IN ($inQuery)");
+                $userStmt->execute($ids);
+                
+                $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($users as &$u) {
+                    $u['registered_at'] = $event['updated_at'];
+                }
+                $roster = $users;
+            }
         }
     }
 
