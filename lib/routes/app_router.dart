@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:go_router/go_router.dart';
 import '../screens/feedback_selection_screen.dart';
 import '../screens/feedback_event_list_screen.dart';
+import '../screens/event_rating_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/register_screen.dart';
@@ -115,7 +116,11 @@ class AppRouter {
       ),
       GoRoute(
         path: '/noticeboard',
-        builder: (context, state) => const NoticeboardScreen(),
+        builder: (context, state) {
+          final extra = state.extra;
+          final int initialIndex = (extra is int) ? extra : 0;
+          return NoticeboardScreen(initialIndex: initialIndex);
+        },
       ),
       GoRoute(
         path: '/news',
@@ -209,17 +214,30 @@ class AppRouter {
         builder: (context, state) => const FeedbackEventListScreen(),
       ),
       GoRoute(
-        path: '/feedback-options',
+        path: '/event-rating',
         builder: (context, state) {
           final eventId = state.extra as int?;
-          return FeedbackSelectionScreen(eventId: eventId);
+          return EventRatingScreen(eventId: eventId);
+        },
+      ),
+      GoRoute(
+        path: '/feedback-options',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return FeedbackSelectionScreen(
+            eventId: extra['event_id'] as int?,
+            ratingsJson: extra['ratings'] as String?,
+          );
         },
       ),
       GoRoute(
         path: '/record-audio',
         builder: (context, state) {
-          final eventId = state.extra as int?;
-          return AudioRecordingScreen(eventId: eventId);
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return AudioRecordingScreen(
+            eventId: extra['event_id'] as int?,
+            ratingsJson: extra['ratings'] as String?,
+          );
         },
       ),
       GoRoute(
@@ -230,6 +248,7 @@ class AppRouter {
             mode: extra['mode'] as String,
             mediaFile: extra['file'] as File?,
             eventId: extra['event_id'] as int?,
+            ratingsJson: extra['ratings'] as String?,
           );
         },
       ),

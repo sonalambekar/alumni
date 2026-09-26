@@ -7,7 +7,9 @@ import '../config/app_config.dart';
 
 class FeedbackSelectionScreen extends StatefulWidget {
   final int? eventId;
-  const FeedbackSelectionScreen({super.key, this.eventId});
+  final String? ratingsJson;
+
+  const FeedbackSelectionScreen({super.key, this.eventId, this.ratingsJson});
 
   @override
   State<FeedbackSelectionScreen> createState() => _FeedbackSelectionScreenState();
@@ -154,6 +156,7 @@ class _FeedbackSelectionScreenState extends State<FeedbackSelectionScreen> {
                         'mode': 'video', 
                         'file': _recordedVideo,
                         'event_id': widget.eventId,
+                        'ratings': widget.ratingsJson,
                       });
                     },
                     style: ElevatedButton.styleFrom(
@@ -207,7 +210,7 @@ class _FeedbackSelectionScreenState extends State<FeedbackSelectionScreen> {
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  'How would you like to share your feedback?',
+                  'How would you like to share your suggestion?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 22,
@@ -229,7 +232,10 @@ class _FeedbackSelectionScreenState extends State<FeedbackSelectionScreen> {
                   title: 'Audio',
                   subtitle: 'Record a voice message',
                   onTap: () {
-                    context.push('/record-audio', extra: widget.eventId);
+                    context.push('/record-audio', extra: {
+                      'event_id': widget.eventId,
+                      'ratings': widget.ratingsJson,
+                    });
                   },
                 ),
                 const SizedBox(height: 16),
@@ -242,6 +248,7 @@ class _FeedbackSelectionScreenState extends State<FeedbackSelectionScreen> {
                       'mode': 'text', 
                       'file': null,
                       'event_id': widget.eventId,
+                      'ratings': widget.ratingsJson,
                     });
                   },
                 ),

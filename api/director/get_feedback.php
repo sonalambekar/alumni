@@ -28,12 +28,16 @@ try {
     // 2. Fetch all feedback, joining with the users table to get name and profile picture.
     // The feedback.user_id column might contain the string USN or the numeric ID.
     $query = "
-        SELECT f.id, f.user_id as submitter_identifier, f.event_id, f.rating, f.feedback_text, f.video_audio_path as video_path, f.created_at,
+        SELECT f.id, f.user_id as submitter_identifier, f.event_id, f.rating, f.detailed_ratings, f.feedback_text, f.video_audio_path as video_path, f.created_at,
                u.name, u.profile_picture, u.usn, u.branch, u.year_of_graduation as batch, u.phone_number as phone
         FROM feedback f
-        LEFT JOIN users u ON f.user_id = u.usn OR f.user_id = CAST(u.id AS CHAR)
+        LEFT JOIN users u ON u.id = (
+            SELECT id FROM users 
+            WHERE CAST(id AS CHAR) = f.user_id OR usn = f.user_id 
+            ORDER BY (CAST(id AS CHAR) = f.user_id) DESC 
+            LIMIT 1
+        )
     ";
-
     $params = [];
     if ($event_id) {
         $query .= " WHERE f.event_id = ? ";

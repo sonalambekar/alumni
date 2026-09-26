@@ -14,12 +14,14 @@ class FeedbackScreen extends StatefulWidget {
   final String mode; // 'text', 'video', 'audio'
   final File? mediaFile;
   final int? eventId;
+  final String? ratingsJson;
 
   const FeedbackScreen({
     Key? key,
     required this.mode,
     this.mediaFile,
     this.eventId,
+    this.ratingsJson,
   }) : super(key: key);
 
   @override
@@ -32,8 +34,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   late stt.SpeechToText _speech;
   bool _isListening = false;
   int _activeQuestion = 0; // 1, 2, or 3
-  
-  int _rating = 0; // Added rating state
   
   bool _isLoading = false;
   String? _errorMessage;
@@ -128,12 +128,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       _successMessage = null;
     });
 
-    if (_rating == 0) {
-      setState(() {
-        _errorMessage = 'Please provide a star rating.';
-      });
-      return;
-    }
 
     if (widget.mode == 'text' && _feedbackController.text.trim().isEmpty) {
       setState(() {
@@ -170,9 +164,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
       FormData formData = FormData.fromMap({
         'user_id': user.id,
-        'rating': _rating,
         'feedback_text': feedbackJson,
         if (widget.eventId != null) 'event_id': widget.eventId,
+        if (widget.ratingsJson != null) 'detailed_ratings': widget.ratingsJson,
       });
 
       if (widget.mediaFile != null) {
@@ -229,26 +223,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  Widget _buildStarRating() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(5, (index) {
-        return IconButton(
-          icon: Icon(
-            index < _rating ? Icons.star : Icons.star_border,
-            color: Colors.amber,
-            size: 40,
-          ),
-          onPressed: () {
-            setState(() {
-              _rating = index + 1;
-            });
-          },
-        );
-      }),
-    );
   }
 
   Widget _buildQuestionCard(String question, TextEditingController controller, int qNumber) {
@@ -390,15 +364,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               const SizedBox(height: 40),
             ],
             
-            const Text(
-              'How would you rate your overall experience?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF333333)),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            _buildStarRating(),
-            
-            const SizedBox(height: 40),
+
             if (_errorMessage != null)
               Container(
                 padding: const EdgeInsets.all(10),

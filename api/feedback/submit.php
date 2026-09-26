@@ -9,7 +9,8 @@ require_once '../includes/db_config.php';
 try {
     // For multipart/form-data, data comes in $_POST, not php://input
     $user_id = $_POST['user_id'] ?? null;
-    $rating = $_POST['rating'] ?? null;
+    $rating = $_POST['rating'] ?? 5; // Default to 5 since we use detailed_ratings now
+    $detailed_ratings = $_POST['detailed_ratings'] ?? null;
     $feedback_text = $_POST['feedback_text'] ?? '';
     $event_id = $_POST['event_id'] ?? null;
     $video_path = null;
@@ -20,17 +21,13 @@ try {
         exit;
     }
 
-    if ($rating === null || $rating < 1 || $rating > 5) {
+    if ($detailed_ratings === null) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Valid rating (1-5) is required']);
+        echo json_encode(['success' => false, 'message' => 'Detailed ratings are required']);
         exit;
     }
     
-    if (empty($feedback_text) && empty($_FILES['video'])) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Text or video feedback is required']);
-        exit;
-    }
+
 
     // Handle video upload if present
     if (isset($_FILES['video'])) {
@@ -78,13 +75,14 @@ try {
         }
     }
 
-    $query = "INSERT INTO feedback (user_id, event_id, rating, feedback_text, video_audio_path, created_at) 
-              VALUES (:user_id, :event_id, :rating, :feedback_text, :video_audio_path, NOW())";
+    $query = "INSERT INTO feedback (user_id, event_id, rating, detailed_ratings, feedback_text, video_audio_path, created_at) 
+              VALUES (:user_id, :event_id, :rating, :detailed_ratings, :feedback_text, :video_audio_path, NOW())";
     $stmt = $pdo->prepare($query);
     $stmt->execute([
         ':user_id' => $user_id,
         ':event_id' => $event_id,
         ':rating' => $rating,
+        ':detailed_ratings' => $detailed_ratings,
         ':feedback_text' => $feedback_text,
         ':video_audio_path' => $video_path
     ]);

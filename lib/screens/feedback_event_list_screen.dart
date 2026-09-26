@@ -230,7 +230,7 @@ backgroundColor: const Color(0xFFEFE8DE),
                         title: 'General App Feedback',
                         date: 'Not event specific',
                         icon: Icons.app_shortcut_rounded,
-                        onTap: () => context.push('/feedback-options'),
+                        onTap: () => context.push('/event-rating'),
                       );
                     }
                     
@@ -242,7 +242,7 @@ backgroundColor: const Color(0xFFEFE8DE),
                       icon: Icons.event,
                       isSubmitted: isSubmitted,
                       onTap: isSubmitted ? null : () async {
-                        await context.push('/feedback-options', extra: int.tryParse(event['id'].toString()));
+                        await context.push('/event-rating', extra: int.tryParse(event['id'].toString()));
                         _fetchEvents();
                       },
                     );

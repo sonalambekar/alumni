@@ -8,7 +8,8 @@ import '../config/app_config.dart';
 
 class AudioRecordingScreen extends StatefulWidget {
   final int? eventId;
-  const AudioRecordingScreen({super.key, this.eventId});
+  final String? ratingsJson;
+  const AudioRecordingScreen({super.key, this.eventId, this.ratingsJson});
 
   @override
   State<AudioRecordingScreen> createState() => _AudioRecordingScreenState();
@@ -100,7 +101,7 @@ class _AudioRecordingScreenState extends State<AudioRecordingScreen> {
 
   void _confirm() {
     if (_audioPath != null) {
-      context.push('/feedback-questions', extra: {'mode': 'audio', 'file': File(_audioPath!), 'event_id': widget.eventId});
+      context.push('/feedback-questions', extra: {'mode': 'audio', 'file': File(_audioPath!), 'event_id': widget.eventId, 'ratings': widget.ratingsJson});
     }
   }
 

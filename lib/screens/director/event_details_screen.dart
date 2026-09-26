@@ -361,59 +361,115 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          color: Colors.grey[100],
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          decoration: BoxDecoration(
+            color: AppConfig.primaryColor.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppConfig.primaryColor.withOpacity(0.2)),
+          ),
           child: Row(
             children: [
-              Text(
-                'Total Registered: ${_roster.length}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppConfig.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.people_alt_rounded, color: AppConfig.primaryColor, size: 24),
               ),
-              const Spacer(),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Total Registered', style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.w500)),
+                    Text(
+                      '${_roster.length} Alumni',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppConfig.primaryColor),
+                    ),
+                  ],
+                ),
+              ),
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh_rounded, color: AppConfig.primaryColor),
                 onPressed: _fetchRoster,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+                tooltip: 'Refresh',
               ),
             ],
           ),
         ),
         Expanded(
-          child: ListView.separated(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: _roster.length,
-            separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final registration = _roster[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppConfig.secondaryColor,
-                  child: Text(
-                    (registration['name'] ?? 'U').toString().substring(0, 1).toUpperCase(),
-                    style: const TextStyle(color: AppConfig.primaryColor),
-                  ),
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.grey.shade200),
                 ),
-                title: GestureDetector(
-                  onTap: () => _showStudentDetails(context, registration),
-                  child: Text(
-                    registration['name'] ?? 'Unknown User',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppConfig.primaryColor,
-                      decoration: TextDecoration.underline,
-                    ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: AppConfig.secondaryColor,
+                        child: Text(
+                          (registration['name'] ?? 'U').toString().substring(0, 1).toUpperCase(),
+                          style: const TextStyle(color: AppConfig.primaryColor, fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GestureDetector(
+                              onTap: () => _showStudentDetails(context, registration),
+                              child: Text(
+                                registration['name'] ?? 'Unknown User',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: AppConfig.primaryColor,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                registration['usn'] ?? 'N/A',
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(Icons.how_to_reg_rounded, size: 14, color: Colors.green.shade600),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Registered: ${DateFormat('MMM dd, yyyy - hh:mm a').format(DateTime.parse(registration['registered_at']))}',
+                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(registration['usn'] ?? 'N/A'),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Registered: ${DateFormat('MMM dd, yyyy - hh:mm a').format(DateTime.parse(registration['registered_at']))}',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
                 ),
               );
             },

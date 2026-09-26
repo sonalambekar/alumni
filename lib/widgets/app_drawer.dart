@@ -118,17 +118,13 @@ class AppDrawer extends StatelessWidget {
                 _buildDrawerItem(context, 'News Corner', Icons.newspaper_rounded, '/news'),
                 _buildDrawerItem(context, 'Galleries', Icons.photo_library_rounded, '/galleries'),
                 if (!(user?.is_director ?? false))
-                  _buildDrawerItem(context, 'Calendar', Icons.event_available_rounded, '/events'),
+                  _buildDrawerItem(context, 'Events', Icons.event_available_rounded, '/noticeboard', extra: 1),
                 _buildDrawerItem(context, 'Jobs Portal', Icons.work_outline_rounded, '/jobs'),
                 _buildDrawerItem(context, 'Proud Alumni', Icons.workspace_premium_rounded, '/proud-alumni'),
                 const Divider(indent: 20, endIndent: 20, height: 30),
                 _buildDrawerItem(context, 'Announcements', Icons.notifications_active_rounded, '/announcements'),
                 _buildDrawerItem(context, 'Alumni Map', Icons.map_rounded, '/alumni-map'),
                 const Divider(indent: 20, endIndent: 20, height: 30),
-                if (!(user?.is_director ?? false) && !(user?.is_spoc ?? false)) ...[
-                  _buildDrawerItem(context, 'Scan Event QR', Icons.qr_code_scanner_rounded, '/scan-qr'),
-                  _buildDrawerItem(context, 'Share Feedback', Icons.feedback_rounded, '/feedback'),
-                ],
                 _buildDrawerItem(context, 'My Profile', Icons.person_rounded, '/profile'),
                 const SizedBox(height: 10),
                 ListTile(
@@ -163,6 +159,7 @@ class AppDrawer extends StatelessWidget {
     String title,
     IconData icon,
     String route,
+    {dynamic extra}
   ) {
     final bool isSelected = GoRouterState.of(context).uri.toString() == route;
 
@@ -187,7 +184,11 @@ class AppDrawer extends StatelessWidget {
         ),
         onTap: () {
           Navigator.pop(context);
-          context.go(route);
+          if (extra != null) {
+            context.push(route, extra: extra);
+          } else {
+            context.go(route);
+          }
         },
       ),
     );

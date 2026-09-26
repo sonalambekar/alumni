@@ -250,6 +250,16 @@ class _DirectorFeedbackScreenState extends State<DirectorFeedbackScreen> {
     bool isAudio = mediaPath != null && (mediaPath.endsWith('.m4a') || mediaPath.endsWith('.mp3') || mediaPath.endsWith('.aac') || mediaPath.endsWith('.wav'));
     bool isVideo = mediaPath != null && !isAudio && mediaPath.isNotEmpty;
 
+    // Parse detailed ratings
+    Map<String, dynamic>? detailedRatings;
+    if (feedback['detailed_ratings'] != null) {
+      try {
+        detailedRatings = jsonDecode(feedback['detailed_ratings']);
+      } catch (e) {
+        print('Failed to parse detailed ratings: $e');
+      }
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
@@ -347,6 +357,37 @@ class _DirectorFeedbackScreenState extends State<DirectorFeedbackScreen> {
                 ),
               ),
             
+            if (detailedRatings != null) ...[
+              const SizedBox(height: 8),
+              Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  collapsedIconColor: AppConfig.primaryColor,
+                  iconColor: AppConfig.primaryColor,
+                  title: Row(
+                    children: [
+                      Icon(Icons.analytics_outlined, size: 18, color: AppConfig.primaryColor.withOpacity(0.8)),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'View Detailed Ratings',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppConfig.primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  children: [
+                    _buildDetailedRatingsView(detailedRatings),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+            ],
             if (mode == 'video') ...[
               InkWell(
                 onTap: () => _launchVideo(mediaPath!),
@@ -582,16 +623,19 @@ class _DirectorFeedbackScreenState extends State<DirectorFeedbackScreen> {
                   )
                 : AnimationLimiter(
                     child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: feedbackList.length,
+                      padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 16),
+                      itemCount: feedbackList.length + 1,
                       itemBuilder: (context, index) {
+                        if (index == 0) return _buildAverageRatingsView();
+                        final feedback = feedbackList[index - 1];
+                        
                         return AnimationConfiguration.staggeredList(
-                          position: index,
+                          position: index - 1,
                           duration: const Duration(milliseconds: 375),
                           child: SlideAnimation(
                             verticalOffset: 50.0,
                             child: FadeInAnimation(
-                              child: _buildFeedbackCard(feedbackList[index], index),
+                              child: _buildFeedbackCard(feedback, index - 1),
                             ),
                           ),
                         );
@@ -601,6 +645,142 @@ class _DirectorFeedbackScreenState extends State<DirectorFeedbackScreen> {
                 ),
               ),
           ],
+      ),
+    );
+  }
+
+  Widget _buildDetailedRatingsView(Map<String, dynamic> ratings) {
+    final Map<String, String> labels = {
+      'overall': 'Overall Experience',
+      'agenda': 'Event Agenda',
+      'food': 'Food & Refreshments',
+      'venue': 'Venue & Hospitality',
+      'future': 'Future Attendance'
+    };
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: ['agenda', 'food', 'venue', 'future', 'overall'].map((key) {
+          if (!ratings.containsKey(key)) return const SizedBox.shrink();
+          final label = labels[key] ?? key;
+          final val = int.tryParse(ratings[key].toString()) ?? 0;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Text(label, style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w500))),
+                Row(
+                  children: List.generate(5, (index) => Icon(
+                    index < val ? Icons.star_rounded : Icons.star_outline_rounded,
+                    size: 16,
+                    color: index < val ? Colors.amber : Colors.grey.shade300,
+                  )),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Color _getColorForRating(double rating) {
+    if (rating >= 4.0) return Colors.green;
+    if (rating >= 3.0) return Colors.amber;
+    return Colors.red;
+  }
+
+  Widget _buildAverageRatingsView() {
+    if (feedbackList.isEmpty) return const SizedBox.shrink();
+
+    final Map<String, String> labels = {
+      'overall': 'Overall Experience',
+      'agenda': 'Event Agenda',
+      'food': 'Food & Refreshments',
+      'venue': 'Venue & Hospitality',
+      'future': 'Future Attendance'
+    };
+
+    Map<String, double> sums = {
+      'agenda': 0, 'food': 0, 'venue': 0, 'future': 0, 'overall': 0
+    };
+    Map<String, int> counts = {
+      'agenda': 0, 'food': 0, 'venue': 0, 'future': 0, 'overall': 0
+    };
+
+    for (var feedback in feedbackList) {
+      if (feedback['detailed_ratings'] != null) {
+        try {
+          final ratings = jsonDecode(feedback['detailed_ratings']);
+          if (ratings is Map) {
+            ratings.forEach((key, value) {
+              if (sums.containsKey(key)) {
+                sums[key] = sums[key]! + (int.tryParse(value.toString()) ?? 0);
+                counts[key] = counts[key]! + 1;
+              }
+            });
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (counts.values.every((c) => c == 0)) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Average Event Ratings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppConfig.primaryColor)),
+          const SizedBox(height: 12),
+          ...sums.keys.map((key) {
+            if (counts[key] == 0) return const SizedBox.shrink();
+            double avg = sums[key]! / counts[key]!;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                children: [
+                  Expanded(flex: 3, child: Text(labels[key]!, style: const TextStyle(fontSize: 12))),
+                  Expanded(
+                    flex: 4,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: avg / 5,
+                              backgroundColor: Colors.grey.shade200,
+                              valueColor: AlwaysStoppedAnimation<Color>(_getColorForRating(avg)),
+                              minHeight: 8,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(avg.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
       ),
     );
   }
